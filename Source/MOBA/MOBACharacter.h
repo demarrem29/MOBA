@@ -10,6 +10,15 @@
 #include "MOBACharacter.generated.h"
 
 UENUM(BlueprintType)
+enum class ETeam : uint8
+{
+	BottomSide		UMETA(DisplayName = "Bottom Side"),
+	TopSide			UMETA(DisplayName = "Top Side"),
+	NeutralHostile	UMETA(DisplayName = "Jungle Camps"),
+	NeutralFriendly UMETA(DisplayName = "Shop Vendors"),
+};
+
+UENUM(BlueprintType)
 enum class AbilityInput : uint8
 {
 	UseAbility1 UMETA(DisplayName = "Use Spell 1"), //This maps the first ability(input ID should be 0 in int) to the action mapping(which you define in the project settings) by the name of "UseAbility1". "Use Spell 1" is the blueprint name of the element.
@@ -46,7 +55,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ability System")
 		class UMOBAAttributeSet* AttributeSet;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
+		ETeam MyTeam;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 

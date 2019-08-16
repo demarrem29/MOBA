@@ -29,19 +29,14 @@ void AMOBAPlayerController::SetupInputComponent()
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
-	InputComponent->BindAction("SetDestination", IE_Pressed, this, &AMOBAPlayerController::OnSetDestinationPressed);
-	InputComponent->BindAction("SetDestination", IE_Released, this, &AMOBAPlayerController::OnSetDestinationReleased);
+	InputComponent->BindAction("RightClick", IE_Pressed, this, &AMOBAPlayerController::OnRightClickPressed);
+	InputComponent->BindAction("RightClick", IE_Released, this, &AMOBAPlayerController::OnRightClickReleased);
+	InputComponent->BindAction("LeftClick", IE_Pressed, this, &AMOBAPlayerController::OnLeftClickPressed);
+	InputComponent->BindAction("LeftClick", IE_Released, this, &AMOBAPlayerController::OnLeftClickReleased);
 
 	// support touch devices 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AMOBAPlayerController::MoveToTouchLocation);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AMOBAPlayerController::MoveToTouchLocation);
-
-	InputComponent->BindAction("ResetVR", IE_Pressed, this, &AMOBAPlayerController::OnResetVR);
-}
-
-void AMOBAPlayerController::OnResetVR()
-{
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
 
 void AMOBAPlayerController::MoveToMouseCursor()
@@ -99,14 +94,24 @@ void AMOBAPlayerController::SetNewMoveDestination(const FVector DestLocation)
 	}
 }
 
-void AMOBAPlayerController::OnSetDestinationPressed()
+void AMOBAPlayerController::OnRightClickPressed()
 {
 	// set flag to keep updating destination until released
 	bMoveToMouseCursor = true;
 }
 
-void AMOBAPlayerController::OnSetDestinationReleased()
+void AMOBAPlayerController::OnRightClickReleased()
 {
 	// clear flag to indicate we should stop updating the destination
 	bMoveToMouseCursor = false;
+}
+
+void AMOBAPlayerController::OnLeftClickPressed()
+{
+	
+}
+
+void AMOBAPlayerController::OnLeftClickReleased()
+{
+	
 }

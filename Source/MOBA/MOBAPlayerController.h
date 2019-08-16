@@ -23,8 +23,6 @@ protected:
 	virtual void SetupInputComponent() override;
 	// End PlayerController interface
 
-	/** Resets HMD orientation in VR. */
-	void OnResetVR();
 
 	/** Navigate player to the current mouse cursor location. */
 	void MoveToMouseCursor();
@@ -35,9 +33,11 @@ protected:
 	/** Navigate player to the given world location. */
 	void SetNewMoveDestination(const FVector DestLocation);
 
-	/** Input handlers for SetDestination action. */
-	void OnSetDestinationPressed();
-	void OnSetDestinationReleased();
+	/** Input handlers for Mouse action. */
+	void OnRightClickPressed();
+	void OnRightClickReleased();
+	void OnLeftClickPressed();
+	void OnLeftClickReleased();
 };
 
 
