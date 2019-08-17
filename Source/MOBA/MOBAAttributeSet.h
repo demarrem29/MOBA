@@ -74,7 +74,6 @@ public:
 	FGameplayAttribute ManaAttribute();
 	FGameplayAttribute LevelAttribute();
 	FGameplayAttribute ExperienceAttribute();
-
 	FHealthChange HealthChange;
 	FManaChange ManaChange;
 	FLevelChange LevelChange;

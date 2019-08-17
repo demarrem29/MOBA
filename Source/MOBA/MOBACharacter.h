@@ -68,6 +68,15 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 
+	UFUNCTION()
+		void HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
+	UFUNCTION()
+		void ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
+	UFUNCTION()
+		void LevelChange(FGameplayAttributeData level, FGameplayAttributeData maxlevel);
+	UFUNCTION()
+		void ExperienceChange(FGameplayAttributeData experience, FGameplayAttributeData maxexperience);
+
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION(BlueprintImplementableEvent)

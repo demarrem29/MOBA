@@ -102,6 +102,7 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 				{
 					Experience = 0;
 					Level = (Level.GetCurrentValue() + 1);
+					LevelChange.Broadcast(Level, MaxLevel);
 					currentlevelstring = FString::FromInt(static_cast<int32>(Level.GetCurrentValue()));	// Get current level as a string
 					XPToLvl = ExperiencePerLevelData->FindRow<FExperiencePerLevel>(FName(*currentlevelstring), "Experience Per Level", true); // Grab the row for the current level
 					MaxExperience = XPToLvl->Experience;

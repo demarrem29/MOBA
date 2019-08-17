@@ -123,14 +123,31 @@ void AMOBACharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 void AMOBACharacter::BeginPlay() 
 {
 	Super::BeginPlay();
-	AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::BP_HealthChange);
-	AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::BP_ManaChange);
-	AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::BP_LevelChange);
-	AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::BP_ExperienceChange);
+	AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::HealthChange);
+	AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::ManaChange);
+	AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::LevelChange);
+	AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::ExperienceChange);
 }
 
 void AMOBACharacter::PossessedBy(AController* NewController) 
 {
 	Super::PossessedBy(NewController);
 	AbilitySystemComponent->RefreshAbilityActorInfo();
+}
+
+void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth) 
+{
+	BP_HealthChange(health, maxhealth);
+}
+void AMOBACharacter::ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana)
+{
+	BP_ManaChange(mana, maxmana);
+}
+void AMOBACharacter::LevelChange(FGameplayAttributeData level, FGameplayAttributeData maxlevel)
+{
+	BP_LevelChange(level, maxlevel);
+}
+void AMOBACharacter::ExperienceChange(FGameplayAttributeData experience, FGameplayAttributeData maxexperience)
+{
+	BP_ExperienceChange(experience, maxexperience);
 }
