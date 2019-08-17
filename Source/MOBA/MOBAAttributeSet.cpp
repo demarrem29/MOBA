@@ -9,7 +9,19 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	,Mana(300.0f)
 	,MaxMana(300.0f)
 	,Level(1.0f)
-{}
+	,MaxLevel(18.0f)
+	,Experience(0.0f)
+	,MaxExperience(280.0f)
+{
+	static ConstructorHelpers::FObjectFinder<UDataTable>
+		ExperiencePerLevelObject(TEXT("DataTable'/Game/Data/ExperiencePerLevel.ExperiencePerLevel'"));
+	if (ExperiencePerLevelObject.Succeeded())
+	{
+		ExperiencePerLevelData = ExperiencePerLevelObject.Object;
+	}
+}
+
+
 
 void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
@@ -61,16 +73,42 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 
 				GASChar->Die(DamagedController, DamagedActor, Data.EffectSpec, Params.RawMagnitude, Params.Normal);
 			}*/
+			HealthChange.Broadcast(Health,MaxHealth);
 		}
 	}
 	if (ManaAttribute() == Data.EvaluatedData.Attribute)
 	{
 		Mana = FMath::Clamp(Mana.GetCurrentValue(), 0.0f, MaxMana.GetCurrentValue());
+		ManaChange.Broadcast(Mana, MaxMana);
 	}
-
 	if (LevelAttribute() == Data.EvaluatedData.Attribute) 
 	{
-		Level = FMath::Clamp(Level.GetCurrentValue(), 1.0f, 18.0f);
+		Level = FMath::Clamp(Level.GetCurrentValue(), 1.0f, MaxLevel.GetCurrentValue());
+		if (Level.GetCurrentValue() == MaxLevel.GetCurrentValue()) 
+		{
+			Experience = 0;
+			MaxExperience = 0;
+		}
+		LevelChange.Broadcast(Level, MaxLevel);
+	}
+	if (ExperienceAttribute() == Data.EvaluatedData.Attribute)
+	{
+		if (Level.GetCurrentValue() < MaxLevel.GetCurrentValue()) {		// Only check XP if level is less than max level
+			FString currentlevelstring = FString::FromInt(static_cast<int32>(Level.GetCurrentValue()));	// Get current level as a string
+			FExperiencePerLevel* XPToLvl = ExperiencePerLevelData->FindRow<FExperiencePerLevel>(FName(*currentlevelstring), "Experience Per Level", true); // Grab the row for the current level
+			if (XPToLvl)
+			{
+				if (Experience.GetCurrentValue() >= XPToLvl->Experience) // Check if we have enough experience for a level up
+				{
+					Experience = 0;
+					Level = (Level.GetCurrentValue() + 1);
+					currentlevelstring = FString::FromInt(static_cast<int32>(Level.GetCurrentValue()));	// Get current level as a string
+					XPToLvl = ExperiencePerLevelData->FindRow<FExperiencePerLevel>(FName(*currentlevelstring), "Experience Per Level", true); // Grab the row for the current level
+					MaxExperience = XPToLvl->Experience;
+				}
+			}
+		}
+		ExperienceChange.Broadcast(Experience, MaxExperience);
 	}
 }
 
@@ -89,5 +127,11 @@ FGameplayAttribute UMOBAAttributeSet::ManaAttribute()
 FGameplayAttribute UMOBAAttributeSet::LevelAttribute()
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Level));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::ExperienceAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Experience));
 	return FGameplayAttribute(Property);
 }

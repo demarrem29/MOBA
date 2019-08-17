@@ -65,7 +65,17 @@ public:
 	void AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcquire);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_LevelChange(FGameplayAttributeData level, FGameplayAttributeData maxlevel);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_ExperienceChange(FGameplayAttributeData experience, FGameplayAttributeData maxexperience);
 
 private:
 	/** Top down camera */

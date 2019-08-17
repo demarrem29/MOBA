@@ -120,6 +120,15 @@ void AMOBACharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds("ConfirmInput", "CancelInput", "AbilityInput"));
 }
 
+void AMOBACharacter::BeginPlay() 
+{
+	Super::BeginPlay();
+	AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::BP_HealthChange);
+	AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::BP_ManaChange);
+	AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::BP_LevelChange);
+	AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::BP_ExperienceChange);
+}
+
 void AMOBACharacter::PossessedBy(AController* NewController) 
 {
 	Super::PossessedBy(NewController);
