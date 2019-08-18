@@ -22,6 +22,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FHealthChange, FGameplayAttributeDa
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FManaChange, FGameplayAttributeData, Mana, FGameplayAttributeData, MaxMana);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FLevelChange, FGameplayAttributeData, Level, FGameplayAttributeData, MaxLevel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FExperienceChange, FGameplayAttributeData, Experience, FGameplayAttributeData, MaxExperience);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttackPowerChange, FGameplayAttributeData, AttackPower);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpellPowerChange, FGameplayAttributeData, SpellPower);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttackSpeedChange, FGameplayAttributeData, AttackSpeed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCriticalChanceChange, FGameplayAttributeData, CriticalChance);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCriticalDamageChange, FGameplayAttributeData, CriticalDamage);
 
 UCLASS()
 class MOBA_API UMOBAAttributeSet : public UAttributeSet
@@ -54,6 +59,21 @@ public:
 	UPROPERTY(Category = "Attributes | Experience", EditAnywhere, BlueprintReadWrite)
 		FGameplayAttributeData MaxExperience;
 
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
+		FGameplayAttributeData AttackPower;
+
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
+		FGameplayAttributeData SpellPower;
+
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
+		FGameplayAttributeData AttackSpeed;
+
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
+		FGameplayAttributeData CriticalChance;
+
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
+		FGameplayAttributeData CriticalDamage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attributes | Experience", meta = (AllowPrivateAccess = "true"))
 		class UDataTable* ExperiencePerLevelData;
 
@@ -74,10 +94,19 @@ public:
 	FGameplayAttribute ManaAttribute();
 	FGameplayAttribute LevelAttribute();
 	FGameplayAttribute ExperienceAttribute();
+	FGameplayAttribute AttackPowerAttribute();
+	FGameplayAttribute SpellPowerAttribute();
+	FGameplayAttribute AttackSpeedAttribute();
+	FGameplayAttribute CriticalChanceAttribute();
+	FGameplayAttribute CriticalDamageAttribute();
 	FHealthChange HealthChange;
 	FManaChange ManaChange;
 	FLevelChange LevelChange;
 	FExperienceChange ExperienceChange;
-	
+	FAttackPowerChange AttackPowerChange;
+	FSpellPowerChange SpellPowerChange;
+	FAttackSpeedChange AttackSpeedChange;
+	FCriticalChanceChange CriticalChanceChange;
+	FCriticalDamageChange CriticalDamageChange;
 };
 

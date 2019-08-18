@@ -59,6 +59,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 		ETeam MyTeam;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		bool bIsAttacking;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 

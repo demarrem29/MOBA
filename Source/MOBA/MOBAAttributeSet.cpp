@@ -12,6 +12,11 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	,MaxLevel(18.0f)
 	,Experience(0.0f)
 	,MaxExperience(280.0f)
+	,AttackPower(55.0f)
+	,SpellPower(0.0f)
+	,AttackSpeed(0.8f)
+	,CriticalChance(0.1f)
+	,CriticalDamage(2.0f)
 {
 	static ConstructorHelpers::FObjectFinder<UDataTable>
 		ExperiencePerLevelObject(TEXT("DataTable'/Game/Data/ExperiencePerLevel.ExperiencePerLevel'"));
@@ -109,6 +114,7 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 				}
 			}
 		}
+		else Experience = FMath::Clamp(Experience.GetCurrentValue(), 0.0f, 0.0f);
 		ExperienceChange.Broadcast(Experience, MaxExperience);
 	}
 }
@@ -134,5 +140,31 @@ FGameplayAttribute UMOBAAttributeSet::LevelAttribute()
 FGameplayAttribute UMOBAAttributeSet::ExperienceAttribute()
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Experience));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::AttackPowerAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackPower));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::SpellPowerAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, SpellPower));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::AttackSpeedAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackSpeed));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalChance));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::CriticalDamageAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalDamage));
 	return FGameplayAttribute(Property);
 }

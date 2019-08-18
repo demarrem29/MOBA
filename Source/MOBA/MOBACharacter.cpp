@@ -59,6 +59,9 @@ AMOBACharacter::AMOBACharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("Ability System Component");
 	AttributeSet = CreateDefaultSubobject<UMOBAAttributeSet>("Attribute Set");
+
+	// Set Default Combat Values
+	bIsAttacking = false;
 }
 
 void AMOBACharacter::Tick(float DeltaSeconds)
