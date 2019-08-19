@@ -33,11 +33,14 @@ protected:
 	/** Navigate player to the given world location. */
 	void SetNewMoveDestination(const FVector DestLocation);
 
-	/** Input handlers for Mouse action. */
+	/** Input handlers for mouse action. */
 	void OnRightClickPressed();
 	void OnRightClickReleased();
 	void OnLeftClickPressed();
 	void OnLeftClickReleased();
+
+	/*  Input handlers for keyboard action. */
+	void Stop();
 };
 
 

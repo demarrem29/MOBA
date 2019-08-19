@@ -6,18 +6,28 @@
 UMOBAAttributeSet::UMOBAAttributeSet() 
 	:Health(500.0f)
 	,MaxHealth(500.0f)
+	,HealthRegen(7.0f)
 	,Mana(300.0f)
 	,MaxMana(300.0f)
+	,ManaRegen(7.3f)
 	,Level(1.0f)
 	,MaxLevel(18.0f)
 	,Experience(0.0f)
 	,MaxExperience(280.0f)
 	,AttackPower(55.0f)
 	,SpellPower(0.0f)
-	,AttackSpeed(0.8f)
+	,AttackSpeed(0.7f)
 	,CriticalChance(0.1f)
 	,CriticalDamage(2.0f)
+	,AttackRange(150.0f)
+	,Armor(0.0f)
+	,PhysicalDamageReduction(0.0f)
+	,EnvironmentalResistance(0.0f)
+	,EnvironmentalDamageReduction(0.0f)
+	,FlatDamageReduction(0.0f)
+	,MovementSpeed(600.0f)
 {
+	// Construct XP per Level Data Table
 	static ConstructorHelpers::FObjectFinder<UDataTable>
 		ExperiencePerLevelObject(TEXT("DataTable'/Game/Data/ExperiencePerLevel.ExperiencePerLevel'"));
 	if (ExperiencePerLevelObject.Succeeded())
@@ -26,7 +36,19 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	}
 }
 
-
+float UMOBAAttributeSet::CalculateDamageReduction(float ResistanceStat) 
+{
+	float damagereduction;
+	if (ResistanceStat >= 0)
+	{
+		damagereduction = 1 - (100 / (100 + ResistanceStat));
+	}
+	else 
+	{
+		damagereduction = 1 - (2 - (100 / (100 - ResistanceStat)));
+	}
+	return damagereduction;
+}
 
 void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
@@ -81,10 +103,20 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 			HealthChange.Broadcast(Health,MaxHealth);
 		}
 	}
+	if (HealthRegenAttribute() == Data.EvaluatedData.Attribute) 
+	{
+		HealthRegen = FMath::Clamp(HealthRegen.GetCurrentValue(), 0.0f, 9999.0f);
+		HealthRegenChange.Broadcast(HealthRegen);
+	}
 	if (ManaAttribute() == Data.EvaluatedData.Attribute)
 	{
 		Mana = FMath::Clamp(Mana.GetCurrentValue(), 0.0f, MaxMana.GetCurrentValue());
 		ManaChange.Broadcast(Mana, MaxMana);
+	}
+	if (ManaRegenAttribute() == Data.EvaluatedData.Attribute)
+	{
+		ManaRegen = FMath::Clamp(ManaRegen.GetCurrentValue(), 0.0f, 9999.0f);
+		ManaRegenChange.Broadcast(ManaRegen);
 	}
 	if (LevelAttribute() == Data.EvaluatedData.Attribute) 
 	{
@@ -117,6 +149,63 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 		else Experience = FMath::Clamp(Experience.GetCurrentValue(), 0.0f, 0.0f);
 		ExperienceChange.Broadcast(Experience, MaxExperience);
 	}
+	if (AttackPowerAttribute() == Data.EvaluatedData.Attribute)
+	{
+		AttackPower = FMath::Clamp(AttackPower.GetCurrentValue(), 0.0f, 1000.0f);
+		AttackPowerChange.Broadcast(AttackPower);
+	}
+	if (SpellPowerAttribute() == Data.EvaluatedData.Attribute)
+	{
+		SpellPower = FMath::Clamp(SpellPower.GetCurrentValue(), 0.0f, 2000.0f);
+		SpellPowerChange.Broadcast(SpellPower);
+	}
+	if (AttackSpeedAttribute() == Data.EvaluatedData.Attribute)
+	{
+		AttackSpeed = FMath::Clamp(AttackSpeed.GetCurrentValue(), 0.0f, 2.5f);
+		AttackSpeedChange.Broadcast(AttackSpeed);
+	}
+	if (CriticalChanceAttribute() == Data.EvaluatedData.Attribute)
+	{
+		CriticalChance = FMath::Clamp(CriticalChance.GetCurrentValue(), 0.0f, 1.0f);
+		CriticalChanceChange.Broadcast(CriticalChance);
+	}
+	if (CriticalDamageAttribute() == Data.EvaluatedData.Attribute)
+	{
+		CriticalDamageChange.Broadcast(CriticalDamage);
+	}
+	if (AttackRangeAttribute() == Data.EvaluatedData.Attribute)
+	{
+		AttackRange = FMath::Clamp(AttackRange.GetCurrentValue(), 0.0f, 800.0f);
+		AttackRangeChange.Broadcast(AttackRange);
+	}
+	if (ArmorAttribute() == Data.EvaluatedData.Attribute)
+	{
+		ArmorChange.Broadcast(Armor);
+		PhysicalDamageReduction = CalculateDamageReduction(Armor.GetCurrentValue());
+		PhysicalDamageReductionChange.Broadcast(PhysicalDamageReduction);
+	}
+	if (PhysicalDamageReductionAttribute() == Data.EvaluatedData.Attribute) 
+	{
+		PhysicalDamageReductionChange.Broadcast(PhysicalDamageReduction);
+	}
+	if (EnvironmentalResistanceAttribute() == Data.EvaluatedData.Attribute)
+	{
+		EnvironmentalResistanceChange.Broadcast(EnvironmentalResistance);
+		EnvironmentalDamageReduction = CalculateDamageReduction(EnvironmentalResistance.GetCurrentValue());
+		EnvironmentalDamageReductionChange.Broadcast(EnvironmentalDamageReduction);
+	}
+	if (EnvironmentalDamageReductionAttribute() == Data.EvaluatedData.Attribute)
+	{
+		EnvironmentalDamageReductionChange.Broadcast(EnvironmentalDamageReduction);
+	}
+	if (FlatDamageReductionAttribute() == Data.EvaluatedData.Attribute)
+	{
+		FlatDamageReductionChange.Broadcast(FlatDamageReduction);
+	}
+	if (MovementSpeedAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MovementSpeedChange.Broadcast(MovementSpeed);
+	}
 }
 
 FGameplayAttribute UMOBAAttributeSet::HealthAttribute()
@@ -125,9 +214,21 @@ FGameplayAttribute UMOBAAttributeSet::HealthAttribute()
 	return FGameplayAttribute(Property);
 }
 
+FGameplayAttribute UMOBAAttributeSet::HealthRegenAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealthRegen));
+	return FGameplayAttribute(Property);
+}
+
 FGameplayAttribute UMOBAAttributeSet::ManaAttribute()
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Mana));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::ManaRegenAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, ManaRegen));
 	return FGameplayAttribute(Property);
 }
 
@@ -166,5 +267,47 @@ FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute()
 FGameplayAttribute UMOBAAttributeSet::CriticalDamageAttribute() 
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalDamage));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::AttackRangeAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackRange));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::ArmorAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Armor));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::PhysicalDamageReductionAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, PhysicalDamageReduction));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::EnvironmentalResistanceAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalResistance));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::EnvironmentalDamageReductionAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalDamageReduction));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::FlatDamageReductionAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, FlatDamageReduction));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::MovementSpeedAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MovementSpeed));
 	return FGameplayAttribute(Property);
 }

@@ -62,32 +62,99 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 		bool bIsAttacking;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		bool bIsInCombat;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		AMOBACharacter* MyEnemyTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		AMOBACharacter* MyFocusTarget;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
-
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcquire);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 
+	// Event Handlers for receiving attribute set delegate broadcasts
 	UFUNCTION()
 		void HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION()
+		void HealthRegenChange(FGameplayAttributeData HealthRegen);
+	UFUNCTION()
 		void ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
+	UFUNCTION()
+		void ManaRegenChange(FGameplayAttributeData ManaRegen);
 	UFUNCTION()
 		void LevelChange(FGameplayAttributeData level, FGameplayAttributeData maxlevel);
 	UFUNCTION()
 		void ExperienceChange(FGameplayAttributeData experience, FGameplayAttributeData maxexperience);
+	UFUNCTION()
+		void AttackPowerChange(FGameplayAttributeData AttackPower);
+	UFUNCTION()
+		void SpellPowerChange(FGameplayAttributeData SpellPower);
+	UFUNCTION()
+		void AttackSpeedChange(FGameplayAttributeData AttackSpeed);
+	UFUNCTION()
+		void CriticalChanceChange(FGameplayAttributeData CriticalChance);
+	UFUNCTION()
+		void CriticalDamageChange(FGameplayAttributeData CriticalDamage);
+	UFUNCTION()
+		void AttackRangeChange(FGameplayAttributeData AttackRange);
+	UFUNCTION()
+		void ArmorChange(FGameplayAttributeData Armor);
+	UFUNCTION()
+		void PhysicalDamageReductionChange(FGameplayAttributeData PhysicalDamageReduction);
+	UFUNCTION()
+		void EnvironmentalResistanceChange(FGameplayAttributeData EnvironmentalResistance);
+	UFUNCTION()
+		void EnvironmentalDamageReductionChange(FGameplayAttributeData EnvironmentalDamageReduction);
+	UFUNCTION()
+		void FlatDamageReductionChange(FGameplayAttributeData FlatDamageReduction);
+	UFUNCTION()
+		void MovementSpeedChange(FGameplayAttributeData MovementSpeed);
 
+	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION(BlueprintImplementableEvent)
+		void BP_HealthRegenChange(FGameplayAttributeData HealthRegen);
+	UFUNCTION(BlueprintImplementableEvent)
 		void BP_ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_ManaRegenChange(FGameplayAttributeData ManaRegen);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_LevelChange(FGameplayAttributeData level, FGameplayAttributeData maxlevel);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_ExperienceChange(FGameplayAttributeData experience, FGameplayAttributeData maxexperience);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_AttackPowerChange(FGameplayAttributeData AttackPower);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_SpellPowerChange(FGameplayAttributeData SpellPower);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_AttackSpeedChange(FGameplayAttributeData AttackSpeed);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_CriticalChanceChange(FGameplayAttributeData CriticalChance);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_CriticalDamageChange(FGameplayAttributeData CriticalDamage);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_AttackRangeChange(FGameplayAttributeData AttackRange);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_ArmorChange(FGameplayAttributeData Armor);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_PhysicalDamageReductionChange(FGameplayAttributeData PhysicalDamageReduction);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_EnvironmentalResistanceChange(FGameplayAttributeData Armor);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_EnvironmentalDamageReductionChange(FGameplayAttributeData EnvironmentalDamageReduction);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_FlatDamageReductionChange(FGameplayAttributeData FlatDamageReduction);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_MovementSpeedChange(FGameplayAttributeData MovementSpeed);
 
 private:
 	/** Top down camera */
