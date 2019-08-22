@@ -7,6 +7,7 @@
 #include "MOBACharacter.h"
 #include "MOBAAttributeSet.h"
 #include "Engine/World.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AMOBAPlayerController::AMOBAPlayerController()
 {
@@ -135,6 +136,11 @@ void AMOBAPlayerController::OnRightClickPressed()
 				// Yes, target is hostile. Set character to attack
 				MyCharacter->bIsAttacking = true;
 				MyCharacter->MyEnemyTarget = HitCharacter;
+				// Change rotation to look at target. Only use yaw.
+				FRotator myrotation = MyCharacter->GetActorRotation();
+				FRotator lookatrotation = UKismetMathLibrary::FindLookAtRotation(MyCharacter->GetActorLocation(), HitCharacter->GetActorLocation());
+				myrotation.SetComponentForAxis(EAxis::Z, lookatrotation.Yaw);
+				MyCharacter->SetActorRotation( myrotation, ETeleportType::None);
 			}
 		}
 	}
@@ -144,7 +150,7 @@ void AMOBAPlayerController::OnRightClickPressed()
 		if (HitResult.bBlockingHit) 
 		{
 			if (MyCharacter)
-			// Yes, target is hostile. Set character to attack
+			// No target, turn off auto-attacks.
 			MyCharacter->bIsAttacking = false;
 			MyCharacter->MyEnemyTarget = NULL;
 		}
