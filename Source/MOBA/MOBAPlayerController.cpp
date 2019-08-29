@@ -1,18 +1,17 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "MOBAPlayerController.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "Runtime/Engine/Classes/Components/DecalComponent.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
-#include "MOBACharacter.h"
-#include "MOBAAttributeSet.h"
-#include "Engine/World.h"
-#include "Kismet/KismetMathLibrary.h"
 
 AMOBAPlayerController::AMOBAPlayerController()
 {
 	bShowMouseCursor = true;
-	DefaultMouseCursor = EMouseCursor::Crosshairs;
+	DefaultMouseCursor = EMouseCursor::Hand;
+	CurrentMouseCursor = EMouseCursor::Hand;
+	MyTeam = ETeam::BottomSide;
+	MovementType = EMovementType::None;
+	// Create a sphere component and place it at AttackTarget
+	AttackCollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Attack Move Radius"), false);
+	AttackCollisionSphere->SetSphereRadius(1000.0f);
 }
 
 void AMOBAPlayerController::PlayerTick(float DeltaTime)
@@ -20,9 +19,18 @@ void AMOBAPlayerController::PlayerTick(float DeltaTime)
 	Super::PlayerTick(DeltaTime);
 
 	// keep updating the destination every tick while desired
-	if (bMoveToMouseCursor)
+	switch (MovementType)
 	{
-		MoveToMouseCursor();
+	case EMovementType::None: break;
+	case EMovementType::MoveToCursor: MoveToMouseCursor(); 
+		break;
+	case EMovementType::MoveToEnemyTarget: MoveToEnemyTarget();
+		break;
+	case EMovementType::MoveToFriendlyTarget: MoveToFriendlyTarget();
+		break;
+	case EMovementType::MoveToAttackLocation: MoveToAttackLocation(AttackLocation); 
+		break;
+	default: break;
 	}
 }
 
@@ -36,139 +44,209 @@ void AMOBAPlayerController::SetupInputComponent()
 	InputComponent->BindAction("LeftClick", IE_Pressed, this, &AMOBAPlayerController::OnLeftClickPressed);
 	InputComponent->BindAction("LeftClick", IE_Released, this, &AMOBAPlayerController::OnLeftClickReleased);
 	InputComponent->BindAction("Stop", IE_Pressed, this, &AMOBAPlayerController::Stop);
-
-	// support touch devices 
-	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AMOBAPlayerController::MoveToTouchLocation);
-	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AMOBAPlayerController::MoveToTouchLocation);
+	InputComponent->BindAction("Attack", IE_Pressed, this, &AMOBAPlayerController::Attack);
 }
 
 void AMOBAPlayerController::MoveToMouseCursor()
 {
-	if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
-	{
-		if (AMOBACharacter* MyPawn = Cast<AMOBACharacter>(GetPawn()))
-		{
-			if (MyPawn->GetCursorToWorld())
-			{
-				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, MyPawn->GetCursorToWorld()->GetComponentLocation());
-			}
-		}
-	}
-	else
-	{
-		// Trace to see what is under the mouse cursor
-		FHitResult Hit;
-		GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-
-		if (Hit.bBlockingHit)
-		{
-			// We hit something, move there
-			SetNewMoveDestination(Hit.ImpactPoint);
-		}
-	}
-}
-
-void AMOBAPlayerController::MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location)
-{
-	FVector2D ScreenSpaceLocation(Location);
-
-	// Trace to see what is under the touch location
-	FHitResult HitResult;
-	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
-	if (HitResult.bBlockingHit)
+	// Trace to see what is under the mouse cursor
+	FHitResult Hit;
+	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+	if (Hit.bBlockingHit)
 	{
 		// We hit something, move there
-		SetNewMoveDestination(HitResult.ImpactPoint);
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, Hit.ImpactPoint);
 	}
 }
 
-void AMOBAPlayerController::SetNewMoveDestination(const FVector DestLocation)
+void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget) 
 {
-	APawn* const MyPawn = GetPawn();
-	if (MyPawn)
+	if (MyCharacter) 
 	{
-		FVector MyLocation = MyPawn->GetActorLocation();
-		FVector TargetLocation = DestLocation;
-		AMOBACharacter* MyCharacter = Cast<AMOBACharacter>(MyPawn);
-		if (MyCharacter) 
+		// Array to store GetOverlappingActors return value 
+		TArray<AActor*> OverlappedActors;
+		// Move Attack Collision sphere to new location
+		AttackCollisionSphere->SetWorldLocation(AttackTarget);
+		// Check if there are enemies within the sphere
+		AttackCollisionSphere->GetOverlappingActors(OverlappedActors, TSubclassOf<AMOBACharacter>());
+		if (OverlappedActors.Num() > 0)
 		{
-			if (MyCharacter->bIsAttacking) // If we're trying to perform an auto attack, we only want to move to the attack range distance from the target
+			float minimumdistance = -1;
+			float currentdistance;
+			for (auto& OverlappedActor : OverlappedActors)
 			{
-				// Construct a destination vector, using the targets z location
-				float x = DestLocation.X - MyLocation.X;
-				float y = DestLocation.Y - MyLocation.Y;
-				float hypotenuse = FMath::Sqrt((x*x + y * y)); 
-				float newhypotenuse = hypotenuse - MyCharacter->AttributeSet->AttackRange.GetCurrentValue();
-				float newx = ((x*newhypotenuse) / hypotenuse) + MyLocation.X;
-				float newy = ((y*newhypotenuse) / hypotenuse) + MyLocation.Y;
-				TargetLocation.X = newx;
-				TargetLocation.Y = newy;
+				if (IsHostile(*Cast<AMOBACharacter>(OverlappedActor))) 
+				{
+					currentdistance = FVector::Dist2D(MyCharacter->GetActorLocation(), OverlappedActor->GetActorLocation());
+					if (minimumdistance == -1)
+					{
+						minimumdistance = currentdistance;
+						MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(OverlappedActor);
+					}
+					else if (currentdistance < minimumdistance)
+					{
+						minimumdistance = currentdistance;
+						MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(OverlappedActor);
+					}
+					MyCharacter->bIsAttacking = true;
+					MovementType = EMovementType::MoveToEnemyTarget;
+				}
+			}
+			MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
+		}
+		else
+		{
+			MyAIController->MoveToLocation(AttackTarget, 5.0f, true, true, false, false, 0, true);
+		}
+	}
+	else MovementType = EMovementType::None;
+}
+
+void AMOBAPlayerController::MoveToFriendlyTarget() 
+{
+	if (MyCharacter->MyFollowTarget) 
+	{
+		MyAIController->MoveToLocation(MyCharacter->MyFollowTarget->GetActorLocation(), 5.0f, false, true, false, false, 0, true);
+	}
+	// If we don't have a target, nothing to move to. Stop calling this function.
+	else MovementType = EMovementType::None;
+}
+
+void AMOBAPlayerController::MoveToEnemyTarget() 
+{
+	if (MyCharacter->MyEnemyTarget) 
+	{
+		FVector MyLocation = MyCharacter->GetActorLocation();
+		FVector TargetLocation = MyCharacter->MyEnemyTarget->GetActorLocation();
+		float distance = FVector::Dist2D(MyLocation, TargetLocation);
+		// Move to the target if out of range
+		if (distance > MyCharacter->AttributeSet->AttackRange.GetCurrentValue())
+		{
+			MyAIController->MoveToLocation(TargetLocation, 0.9*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
+		}
+		// We're in range, try to attack
+		else 
+		{
+			MyCharacter->bIsAttacking = true;
+			if (MyCharacter->GetBasicAttackCooldown() == 0) 
+			{
+				// Signal Character to Start Attack. BP_InitiateBasicAttack() called too frequently
 			}
 		}
-		// Move Command
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetLocation);
 	}
+	// If we don't have a target, nothing to move to. Stop calling this function.
+	else MovementType = EMovementType::None;
 }
 
 void AMOBAPlayerController::OnRightClickPressed()
 {
-	// Trace to see what is under the mouse cursor
-	FHitResult HitResult;
-	AMOBACharacter* MyCharacter = Cast<AMOBACharacter>(GetPawn());
-	// Try to get a pawn first
-	GetHitResultUnderCursor(ECC_Pawn, false, HitResult);
-	if (Cast<AMOBACharacter>(HitResult.GetActor()))
+	if (bAttackPending) 
 	{
-		// Check if the target hit was an attackable target
-		AActor* HitActor = HitResult.GetActor();
-		AMOBACharacter* HitCharacter = Cast<AMOBACharacter>(HitActor);
-		if (!MyCharacter) 
+		bAttackPending = false;
+		CurrentMouseCursor = DefaultMouseCursor;
+	}
+	else 
+	{
+		// Trace to see what is under the mouse cursor
+		FHitResult HitResult;
+		// Try to get a pawn first
+		GetHitResultUnderCursor(ECC_Pawn, false, HitResult);
+		if (Cast<AMOBACharacter>(HitResult.GetActor()))
 		{
-			UE_LOG(LogTemp, Error, TEXT("Couldn't get a pointer to a pawn. No possessed pawn, or the pawn is the wrong class!"));
-			return;
-		}
-		if (HitCharacter) 
-		{
-			ETeam MyTeam = MyCharacter->MyTeam;
-			ETeam TargetTeam = HitCharacter->MyTeam;
-			if (MyTeam != TargetTeam && TargetTeam != ETeam::NeutralFriendly) // Check if the target is hostile
+			// Check if the target hit was an attackable target
+			AActor* HitActor = HitResult.GetActor();
+			AMOBACharacter* HitCharacter = Cast<AMOBACharacter>(HitActor);
+			if (!MyCharacter)
 			{
-				// Yes, target is hostile. Set character to attack
-				MyCharacter->bIsAttacking = true;
-				MyCharacter->MyEnemyTarget = HitCharacter;
+				UE_LOG(LogTemp, Error, TEXT("Couldn't get a pointer to a pawn. No possessed pawn, or the pawn is the wrong class!"));
+				return;
+			}
+			if (HitCharacter)
+			{
+				ETeam SourceTeam = MyCharacter->MyTeam;
+				ETeam TargetTeam = HitCharacter->MyTeam;
+				if (IsHostile(*HitCharacter)) // Check if the target is hostile
+				{
+					// Yes, target is hostile. Set character to attack
+					MyCharacter->bIsAttacking = true;
+					MyCharacter->MyEnemyTarget = HitCharacter;
+					MyCharacter->MyFollowTarget = NULL;
+					MovementType = EMovementType::MoveToEnemyTarget;
+					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
+				}
+				else
+				{
+					// No, target is friendly. Set to Follow
+					MyCharacter->bIsAttacking = false;
+					MyCharacter->MyEnemyTarget = NULL;
+					MyCharacter->MyFollowTarget = HitCharacter;
+					MovementType = EMovementType::MoveToFriendlyTarget;
+				}
 				// Change rotation to look at target. Only use yaw.
 				FRotator myrotation = MyCharacter->GetActorRotation();
 				FRotator lookatrotation = UKismetMathLibrary::FindLookAtRotation(MyCharacter->GetActorLocation(), HitCharacter->GetActorLocation());
 				myrotation.SetComponentForAxis(EAxis::Z, lookatrotation.Yaw);
-				MyCharacter->SetActorRotation( myrotation, ETeleportType::None);
+				MyCharacter->SetActorRotation(myrotation, ETeleportType::None);
+			}
+		}
+		else // Didn't find a pawn target, so move to location instead
+		{
+			GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
+			if (HitResult.bBlockingHit)
+			{
+				if (MyCharacter)
+				{
+					// No target, turn off auto-attacks.
+					MyCharacter->bIsAttacking = false;
+					MyCharacter->MyEnemyTarget = NULL;
+					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
+					// set flag to keep updating destination until released
+					MovementType = EMovementType::MoveToCursor;
+				}
 			}
 		}
 	}
-	else // Didn't find a pawn target, so move to location instead
-	{
-		GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
-		if (HitResult.bBlockingHit) 
-		{
-			if (MyCharacter)
-			// No target, turn off auto-attacks.
-			MyCharacter->bIsAttacking = false;
-			MyCharacter->MyEnemyTarget = NULL;
-		}
-	}
-	
-	// set flag to keep updating destination until released
-	bMoveToMouseCursor = true;
 }
 
 void AMOBAPlayerController::OnRightClickReleased()
 {
 	// clear flag to indicate we should stop updating the destination
-	bMoveToMouseCursor = false;
+	if (MovementType == EMovementType::MoveToCursor) 
+	{
+		MovementType = EMovementType::None;
+	}
 }
 
 void AMOBAPlayerController::OnLeftClickPressed()
 {
-	
+	// Trace to see what is under the mouse cursor
+	FHitResult HitResult;
+	GetHitResultUnderCursor(ECC_Pawn, false, HitResult);
+	if (bAttackPending)
+	{
+		if (Cast<AMOBACharacter>(HitResult.GetActor())) 
+		{
+			if (IsHostile(*Cast<AMOBACharacter>(HitResult.GetActor()))) 
+			{
+				MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(HitResult.GetActor());
+				MovementType = EMovementType::MoveToEnemyTarget;
+			}
+		}
+		else
+		{
+			AttackLocation = HitResult.ImpactPoint;
+			MovementType = EMovementType::MoveToAttackLocation;
+		}
+		CurrentMouseCursor = DefaultMouseCursor;
+		bAttackPending = false;
+	}
+	else 
+	{
+		if (Cast<AMOBACharacter>(HitResult.GetActor())) 
+		{
+			MyCharacter->MyFocusTarget = Cast<AMOBACharacter>(HitResult.GetActor());
+		}
+	}
 }
 
 void AMOBAPlayerController::OnLeftClickReleased()
@@ -178,20 +256,49 @@ void AMOBAPlayerController::OnLeftClickReleased()
 
 void AMOBAPlayerController::Stop() 
 {
-	APawn* const MyPawn = GetPawn();
-	AMOBACharacter* MyCharacter;
 	FVector location;
-	if (MyPawn) 
+	if (MyCharacter) 
 	{
-		location = MyPawn->GetActorLocation();
-		SetNewMoveDestination(location);
-		MyCharacter = Cast<AMOBACharacter>(MyPawn);
-		if (MyCharacter) 
-		{
-			MyCharacter->bIsAttacking = false;
-			MyCharacter->MyEnemyTarget = NULL;
-		}
+		location = MyCharacter->GetActorLocation();
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, location);
+		MyCharacter->bIsAttacking = false;
+		MyCharacter->MyEnemyTarget = NULL;
+		MyCharacter->MyFollowTarget = NULL;
+		MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 	}
 	// clear flag to indicate we should stop updating the destination
-	bMoveToMouseCursor = false;
+	MovementType = EMovementType::None;
+}
+
+void AMOBAPlayerController::Attack()
+{
+	if (MyCharacter)
+	{
+		bAttackPending = true;
+		CurrentMouseCursor = EMouseCursor::Crosshairs;
+	}
+}
+
+// Check and see if another character is hostile (should we allow attacks or abilities on this target)
+bool AMOBAPlayerController::IsHostile(AMOBACharacter& TargetCharacter) 
+{
+	if (TargetCharacter.IsValidLowLevel() && MyCharacter->IsValidLowLevel()) 
+	{
+		if (MyCharacter->MyTeam != TargetCharacter.MyTeam && TargetCharacter.MyTeam != ETeam::NeutralFriendly) 
+		{
+			return true;
+		}
+		else return false;
+	}
+	else return false;
+}
+
+void AMOBAPlayerController::BeginPlay() 
+{
+	MyPawn = GetPawn();
+	if (!MyPawn) 
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("UMyClass %s BeginPlay error! No possessed pawn."), *GetNameSafe(this));
+	}
+	CurrentMouseCursor = DefaultMouseCursor;
 }

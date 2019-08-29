@@ -63,7 +63,11 @@ AMOBACharacter::AMOBACharacter()
 	// Set Default Combat Values
 	bIsAttacking = false;
 	bIsInCombat = false;
-
+	RangeDetector = CreateDefaultSubobject<USphereComponent>("Attack Range Indicator");
+	RangeDetector->SetGenerateOverlapEvents(true);
+	RangeDetector->SetupAttachment(RootComponent);
+	RangeDetector->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	RangeDetector->bHiddenInGame = true;
 	// Initialize Any Attributes that require additional logic outside of default attribute values
 	ACharacter* Char = Cast<ACharacter>(GetParentActor());
 	if (AttributeSet)
@@ -71,8 +75,6 @@ AMOBACharacter::AMOBACharacter()
 		if (Char) {
 			Char->GetCharacterMovement()->MaxWalkSpeed = AttributeSet->MovementSpeed.GetCurrentValue(); // Set walk speed to value in the attribute set
 		}
-		AttributeSet->PhysicalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->Armor.GetCurrentValue());
-		AttributeSet->EnvironmentalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->EnvironmentalResistance.GetCurrentValue());
 	}
 }
 
@@ -129,6 +131,22 @@ void AMOBACharacter::AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcqui
 	
 }
 
+float AMOBACharacter::GetBasicAttackCooldown() 
+{
+	if (AbilitySystemComponent) 
+	{
+		FGameplayTagContainer CooldownContainer;
+		FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Abilities.BasicAttack.Cooldown")));
+		CooldownContainer.AddTag(CooldownTag);
+		FGameplayEffectQuery MyQuery = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownContainer);
+		if (AbilitySystemComponent->GetActiveEffectsTimeRemaining(MyQuery).Num() > 0) 
+		{
+			return (AbilitySystemComponent->GetActiveEffectsTimeRemaining(MyQuery)).Last();
+		}
+	}
+	return 0.0f;
+}
+
 void AMOBACharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) 
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -138,30 +156,37 @@ void AMOBACharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 void AMOBACharacter::BeginPlay() 
 {
 	Super::BeginPlay();
-	AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::HealthChange);
-	AttributeSet->HealthRegenChange.AddDynamic(this, &AMOBACharacter::HealthRegenChange);
-	AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::ManaChange);
-	AttributeSet->ManaRegenChange.AddDynamic(this, &AMOBACharacter::ManaRegenChange);
-	AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::LevelChange);
-	AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::ExperienceChange);
-	AttributeSet->AttackPowerChange.AddDynamic(this, &AMOBACharacter::AttackPowerChange);
-	AttributeSet->SpellPowerChange.AddDynamic(this, &AMOBACharacter::SpellPowerChange);
-	AttributeSet->AttackSpeedChange.AddDynamic(this, &AMOBACharacter::AttackSpeedChange);
-	AttributeSet->CriticalChanceChange.AddDynamic(this, &AMOBACharacter::CriticalChanceChange);
-	AttributeSet->CriticalDamageChange.AddDynamic(this, &AMOBACharacter::CriticalDamageChange);
-	AttributeSet->AttackRangeChange.AddDynamic(this, &AMOBACharacter::AttackRangeChange);
-	AttributeSet->ArmorChange.AddDynamic(this, &AMOBACharacter::ArmorChange);
-	AttributeSet->PhysicalDamageReductionChange.AddDynamic(this, &AMOBACharacter::PhysicalDamageReductionChange);
-	AttributeSet->EnvironmentalResistanceChange.AddDynamic(this, &AMOBACharacter::EnvironmentalResistanceChange);
-	AttributeSet->EnvironmentalDamageReductionChange.AddDynamic(this, &AMOBACharacter::EnvironmentalDamageReductionChange);
-	AttributeSet->FlatDamageReductionChange.AddDynamic(this, &AMOBACharacter::FlatDamageReductionChange);
-	AttributeSet->MovementSpeedChange.AddDynamic(this, &AMOBACharacter::MovementSpeedChange);
+	if (AttributeSet) {
+		CombatStatusChangeDelegate.AddDynamic(this, &AMOBACharacter::CombatStatusChange);
+		RangeDetector->SetSphereRadius(AttributeSet->AttackRange.GetCurrentValue());
+		AttributeSet->PhysicalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->Armor.GetCurrentValue());
+		AttributeSet->EnvironmentalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->EnvironmentalResistance.GetCurrentValue());
+		AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::HealthChange);
+		AttributeSet->HealthRegenChange.AddDynamic(this, &AMOBACharacter::HealthRegenChange);
+		AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::ManaChange);
+		AttributeSet->ManaRegenChange.AddDynamic(this, &AMOBACharacter::ManaRegenChange);
+		AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::LevelChange);
+		AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::ExperienceChange);
+		AttributeSet->AttackPowerChange.AddDynamic(this, &AMOBACharacter::AttackPowerChange);
+		AttributeSet->SpellPowerChange.AddDynamic(this, &AMOBACharacter::SpellPowerChange);
+		AttributeSet->AttackSpeedChange.AddDynamic(this, &AMOBACharacter::AttackSpeedChange);
+		AttributeSet->CriticalChanceChange.AddDynamic(this, &AMOBACharacter::CriticalChanceChange);
+		AttributeSet->CriticalDamageChange.AddDynamic(this, &AMOBACharacter::CriticalDamageChange);
+		AttributeSet->AttackRangeChange.AddDynamic(this, &AMOBACharacter::AttackRangeChange);
+		AttributeSet->ArmorChange.AddDynamic(this, &AMOBACharacter::ArmorChange);
+		AttributeSet->PhysicalDamageReductionChange.AddDynamic(this, &AMOBACharacter::PhysicalDamageReductionChange);
+		AttributeSet->EnvironmentalResistanceChange.AddDynamic(this, &AMOBACharacter::EnvironmentalResistanceChange);
+		AttributeSet->EnvironmentalDamageReductionChange.AddDynamic(this, &AMOBACharacter::EnvironmentalDamageReductionChange);
+		AttributeSet->FlatDamageReductionChange.AddDynamic(this, &AMOBACharacter::FlatDamageReductionChange);
+		AttributeSet->MovementSpeedChange.AddDynamic(this, &AMOBACharacter::MovementSpeedChange);
+	}
 }
 
 void AMOBACharacter::PossessedBy(AController* NewController) 
 {
 	Super::PossessedBy(NewController);
 	AbilitySystemComponent->RefreshAbilityActorInfo();
+
 }
 
 void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth) 
@@ -246,4 +271,9 @@ void AMOBACharacter::MovementSpeedChange(FGameplayAttributeData MovementSpeed)
 		Char->GetCharacterMovement()->MaxWalkSpeed = MovementSpeed.GetCurrentValue();
 	}
 	BP_MovementSpeedChange(MovementSpeed);
+}
+
+void AMOBACharacter::CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn) 
+{
+	BP_CombatStatusChange(bIsAttackingIn, bIsInCombatIn);
 }
