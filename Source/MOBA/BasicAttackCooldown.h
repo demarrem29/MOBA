@@ -10,15 +10,11 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType, Blueprintable, Abstract)
 class MOBA_API UBasicAttackCooldown : public UGameplayModMagnitudeCalculation
 {
 	GENERATED_UCLASS_BODY()
 
-		UMOBAAttributeSet AttributeSet;
-	UPROPERTY()
-	FGameplayEffectAttributeCaptureDefinition AttackSpeedCaptureDefinition = FGameplayEffectAttributeCaptureDefinition(AttributeSet.AttackSpeedAttribute(), EGameplayEffectAttributeCaptureSource::Source, true);
-private:
-
-	float CalculateBaseMagnitude_Implementation(const FGameplayEffectSpec& Spec) const override;
+public:
+	virtual float CalculateBaseMagnitude_Implementation(const FGameplayEffectSpec& Spec) const override;
 };

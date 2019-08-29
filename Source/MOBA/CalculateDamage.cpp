@@ -50,6 +50,8 @@ UCalculateDamage::UCalculateDamage(const FObjectInitializer& ObjectInitializer)
 	RelevantAttributesToCapture.Add(Damage().PhysicalDamageReductionDef);
 	RelevantAttributesToCapture.Add(Damage().EnvironmentalDamageReductionDef);
 	RelevantAttributesToCapture.Add(Damage().FlatDamageReductionDef);
+	RelevantAttributesToCapture.Add(Damage().AttackPowerDef);
+	RelevantAttributesToCapture.Add(Damage().SpellPowerDef);
 	RelevantAttributesToCapture.Add(Damage().CriticalChanceDef);
 	RelevantAttributesToCapture.Add(Damage().CriticalDamageDef);
 }
@@ -96,7 +98,7 @@ void UCalculateDamage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	//	
 	// --------------------------------------
 
-	float DamageDone = AttackPower  * (1 - PhysicalDamageReduction);
+	float DamageDone = AttackPower  * (1 - PhysicalDamageReduction) * (1 - FlatDamageReduction);
 
 	if (DamageDone > 0.f)
 	{

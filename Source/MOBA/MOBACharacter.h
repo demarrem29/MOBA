@@ -7,7 +7,10 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayAbilitySpec.h"
+#include "Components/SphereComponent.h"
 #include "MOBACharacter.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCombatStatusChange, bool, bIsAttacking, bool, bIsInCombat);
 
 UENUM(BlueprintType)
 enum class ETeam : uint8
@@ -65,16 +68,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 		bool bIsInCombat;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyEnemyTarget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+		AMOBACharacter* MyFollowTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyFocusTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		USphereComponent* RangeDetector;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcquire);
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+		float GetBasicAttackCooldown();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
@@ -117,6 +129,8 @@ public:
 		void FlatDamageReductionChange(FGameplayAttributeData FlatDamageReduction);
 	UFUNCTION()
 		void MovementSpeedChange(FGameplayAttributeData MovementSpeed);
+	UFUNCTION()
+		void CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn);
 
 	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)
@@ -155,6 +169,14 @@ public:
 		void BP_FlatDamageReductionChange(FGameplayAttributeData FlatDamageReduction);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_MovementSpeedChange(FGameplayAttributeData MovementSpeed);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn);
+
+	// Player Controller Initiated Events
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_InitiateBasicAttack();
+	
+	FCombatStatusChange CombatStatusChangeDelegate;
 
 private:
 	/** Top down camera */

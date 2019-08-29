@@ -100,8 +100,9 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 
 				GASChar->Die(DamagedController, DamagedActor, Data.EffectSpec, Params.RawMagnitude, Params.Normal);
 			}*/
-			HealthChange.Broadcast(Health,MaxHealth);
+			
 		}
+		HealthChange.Broadcast(Health, MaxHealth);
 	}
 	if (HealthRegenAttribute() == Data.EvaluatedData.Attribute) 
 	{
