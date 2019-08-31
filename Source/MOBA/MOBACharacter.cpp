@@ -180,6 +180,12 @@ void AMOBACharacter::BeginPlay()
 		AttributeSet->FlatDamageReductionChange.AddDynamic(this, &AMOBACharacter::FlatDamageReductionChange);
 		AttributeSet->MovementSpeedChange.AddDynamic(this, &AMOBACharacter::MovementSpeedChange);
 	}
+	if (AbilitySystemComponent) 
+	{
+		AbilitySystemComponent->OnAbilityEnded.AddUObject(this, &AMOBACharacter::OnAbilityEnded);
+		FOnGivenActiveGameplayEffectRemoved* GameplayEffectRemovedDelegate = &AbilitySystemComponent->OnAnyGameplayEffectRemovedDelegate();
+		GameplayEffectRemovedDelegate->AddUObject(this, &AMOBACharacter::OnGameplayEffectEnd);
+	}
 }
 
 void AMOBACharacter::PossessedBy(AController* NewController) 
@@ -276,4 +282,27 @@ void AMOBACharacter::MovementSpeedChange(FGameplayAttributeData MovementSpeed)
 void AMOBACharacter::CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn) 
 {
 	BP_CombatStatusChange(bIsAttackingIn, bIsInCombatIn);
+}
+
+void AMOBACharacter::OnAbilityEnded(const FAbilityEndedData& AbilityEndData)
+{
+	BP_OnAbilityEnded(AbilityEndData);
+}
+
+void AMOBACharacter::OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect)
+{
+	
+	FName gameplayeffectname = EndedGameplayEffect.Spec.Def->GetFName();
+	// Check if the ended effect was the basic attack cooldown
+	if (gameplayeffectname == TEXT("Default__GE_BasicAttackCooldown_C"))
+	{
+		// 
+		float cooldownremaining = GetBasicAttackCooldown();
+		if (cooldownremaining <= 0)
+		{
+			BP_TryBasicAttack();
+		}
+	}
+	
+	BP_OnGameplayEffectEnd(EndedGameplayEffect);
 }

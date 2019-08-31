@@ -128,10 +128,8 @@ void AMOBAPlayerController::MoveToEnemyTarget()
 		else 
 		{
 			MyCharacter->bIsAttacking = true;
-			if (MyCharacter->GetBasicAttackCooldown() == 0) 
-			{
-				// Signal Character to Start Attack. BP_InitiateBasicAttack() called too frequently
-			}
+			MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
+			MyCharacter->BP_TryBasicAttack();
 		}
 	}
 	// If we don't have a target, nothing to move to. Stop calling this function.

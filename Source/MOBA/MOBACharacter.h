@@ -131,6 +131,10 @@ public:
 		void MovementSpeedChange(FGameplayAttributeData MovementSpeed);
 	UFUNCTION()
 		void CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn);
+	UFUNCTION()
+		void OnAbilityEnded(const FAbilityEndedData& AbilityEndData);
+	UFUNCTION()
+		void OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect);
 
 	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)
@@ -171,10 +175,12 @@ public:
 		void BP_MovementSpeedChange(FGameplayAttributeData MovementSpeed);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn);
-
-	// Player Controller Initiated Events
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_InitiateBasicAttack();
+		void BP_OnAbilityEnded(const FAbilityEndedData& AbilityEndData);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_TryBasicAttack();
 	
 	FCombatStatusChange CombatStatusChangeDelegate;
 
