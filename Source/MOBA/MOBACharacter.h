@@ -135,6 +135,8 @@ public:
 		void OnAbilityEnded(const FAbilityEndedData& AbilityEndData);
 	UFUNCTION()
 		void OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect);
+	UFUNCTION()
+		void TryBasicAttack();
 
 	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)

@@ -296,13 +296,18 @@ void AMOBACharacter::OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGamep
 	// Check if the ended effect was the basic attack cooldown
 	if (gameplayeffectname == TEXT("Default__GE_BasicAttackCooldown_C"))
 	{
-		// 
-		float cooldownremaining = GetBasicAttackCooldown();
-		if (cooldownremaining <= 0)
-		{
-			BP_TryBasicAttack();
-		}
+		// Basic Attack Cooldown Complete, try basic attack
+		TryBasicAttack();
 	}
 	
 	BP_OnGameplayEffectEnd(EndedGameplayEffect);
+}
+
+void AMOBACharacter::TryBasicAttack()
+{
+	float cooldownremaining = GetBasicAttackCooldown();
+	if (cooldownremaining <= 0)
+	{
+		BP_TryBasicAttack();
+	}
 }

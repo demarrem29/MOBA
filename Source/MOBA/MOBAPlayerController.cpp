@@ -129,7 +129,7 @@ void AMOBAPlayerController::MoveToEnemyTarget()
 		{
 			MyCharacter->bIsAttacking = true;
 			MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
-			MyCharacter->BP_TryBasicAttack();
+			MyCharacter->TryBasicAttack();
 		}
 	}
 	// If we don't have a target, nothing to move to. Stop calling this function.
