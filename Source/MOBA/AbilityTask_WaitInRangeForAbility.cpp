@@ -38,7 +38,7 @@ void UAbilityTask_WaitInRangeForAbility::OverlapHandle(UPrimitiveComponent* Over
 UAbilityTask_WaitInRangeForAbility* UAbilityTask_WaitInRangeForAbility::WaitInRangeForAbility(UGameplayAbility * OwningAbility, AMOBACharacter* Source, AMOBACharacter* Target)
 {
 
-	UAbilityTask_WaitInRangeForAbility* MyObj = crea<UAbilityTask_WaitInRangeForAbility>(OwningAbility);
+	UAbilityTask_WaitInRangeForAbility* MyObj = NewAbilityTask<UAbilityTask_WaitInRangeForAbility>(OwningAbility);
 	return MyObj;
 }
 

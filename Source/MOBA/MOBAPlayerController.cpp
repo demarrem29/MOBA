@@ -49,14 +49,18 @@ void AMOBAPlayerController::SetupInputComponent()
 
 void AMOBAPlayerController::MoveToMouseCursor()
 {
-	// Trace to see what is under the mouse cursor
-	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-	if (Hit.bBlockingHit)
+	if (MyCharacter && MyAIController) 
 	{
-		// We hit something, move there
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, Hit.ImpactPoint);
+		// Trace to see what is under the mouse cursor
+		FHitResult Hit;
+		GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+		if (Hit.bBlockingHit)
+		{
+			// We hit something, move there
+ 			UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, Hit.ImpactPoint);
+		}
 	}
+	
 }
 
 void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget) 
@@ -88,15 +92,13 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 						minimumdistance = currentdistance;
 						MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(OverlappedActor);
 					}
-					MyCharacter->bIsAttacking = true;
 					MovementType = EMovementType::MoveToEnemyTarget;
 				}
 			}
-			MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 		}
 		else
 		{
-			MyAIController->MoveToLocation(AttackTarget, 5.0f, true, true, false, false, 0, true);
+			MyAIController->MoveToLocation(AttackTarget, 0.95*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
 		}
 	}
 	else MovementType = EMovementType::None;
@@ -104,7 +106,7 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 
 void AMOBAPlayerController::MoveToFriendlyTarget() 
 {
-	if (MyCharacter->MyFollowTarget) 
+	if (MyCharacter->MyFollowTarget && MyAIController) 
 	{
 		MyAIController->MoveToLocation(MyCharacter->MyFollowTarget->GetActorLocation(), 5.0f, false, true, false, false, 0, true);
 	}
@@ -114,7 +116,7 @@ void AMOBAPlayerController::MoveToFriendlyTarget()
 
 void AMOBAPlayerController::MoveToEnemyTarget() 
 {
-	if (MyCharacter->MyEnemyTarget) 
+	if (MyCharacter->MyEnemyTarget && MyAIController) 
 	{
 		FVector MyLocation = MyCharacter->GetActorLocation();
 		FVector TargetLocation = MyCharacter->MyEnemyTarget->GetActorLocation();
@@ -122,13 +124,12 @@ void AMOBAPlayerController::MoveToEnemyTarget()
 		// Move to the target if out of range
 		if (distance > MyCharacter->AttributeSet->AttackRange.GetCurrentValue())
 		{
-			MyAIController->MoveToLocation(TargetLocation, 0.9*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
+			MyAIController->MoveToLocation(TargetLocation, 0.95*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
 		}
 		// We're in range, try to attack
 		else 
 		{
 			MyCharacter->bIsAttacking = true;
-			MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 			MyCharacter->TryBasicAttack();
 		}
 	}
@@ -169,6 +170,8 @@ void AMOBAPlayerController::OnRightClickPressed()
 					MyCharacter->bIsAttacking = true;
 					MyCharacter->MyEnemyTarget = HitCharacter;
 					MyCharacter->MyFollowTarget = NULL;
+					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
+					MyCharacter->StopAnimMontage(currentmontage);
 					MovementType = EMovementType::MoveToEnemyTarget;
 					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 				}
@@ -178,6 +181,8 @@ void AMOBAPlayerController::OnRightClickPressed()
 					MyCharacter->bIsAttacking = false;
 					MyCharacter->MyEnemyTarget = NULL;
 					MyCharacter->MyFollowTarget = HitCharacter;
+					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
+					MyCharacter->StopAnimMontage(currentmontage);
 					MovementType = EMovementType::MoveToFriendlyTarget;
 				}
 				// Change rotation to look at target. Only use yaw.
@@ -199,6 +204,8 @@ void AMOBAPlayerController::OnRightClickPressed()
 					MyCharacter->MyEnemyTarget = NULL;
 					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 					// set flag to keep updating destination until released
+					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
+					MyCharacter->StopAnimMontage(currentmontage);
 					MovementType = EMovementType::MoveToCursor;
 				}
 			}
@@ -252,6 +259,7 @@ void AMOBAPlayerController::OnLeftClickReleased()
 	
 }
 
+// Event handler for user pressing the "Stop" input action
 void AMOBAPlayerController::Stop() 
 {
 	FVector location;
@@ -268,6 +276,7 @@ void AMOBAPlayerController::Stop()
 	MovementType = EMovementType::None;
 }
 
+// Event handler for user pressing the "Attack" input action
 void AMOBAPlayerController::Attack()
 {
 	if (MyCharacter)

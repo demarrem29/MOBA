@@ -4,18 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "Components/SphereComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h
+#include "MOBACharacter.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Projectile.generated.h"
 
 /**
  * 
  */
-class MOBA_API Projectile : public AActor
+
+UCLASS(Blueprintable)
+class MOBA_API AProjectile : public AActor
 {
+
+	GENERATED_BODY()
 public:
 	// Sets default values for this actor's properties
-	Projectile();
+	AProjectile();
 
 protected:
 	// Called when the game starts or when spawned
@@ -25,6 +31,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+		AMOBACharacter* MyEnemyTarget;
+	
 	// Sphere collision component.
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 		USphereComponent* CollisionComponent;
@@ -33,7 +42,13 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Movement)
 		UProjectileMovementComponent* ProjectileMovementComponent;
 
-	// Function that initializes the projectile's velocity in the shoot direction.
-	void FireInDirection(const FVector& ShootDirection);
-};
+	UFUNCTION(BlueprintImplementableEvent)
+		void OnTargetReached(AMOBACharacter* InTarget);
+
+	UFUNCTION(BlueprintCallable)
+		void InitializeProjectile(AMOBACharacter* Target);
+
+	// Handler for when projectile overlaps something
+	UFUNCTION()
+	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 };
