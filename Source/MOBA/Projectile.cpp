@@ -31,6 +31,7 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = false;
 	InitialLifeSpan = 0.0f; // Projectile lives until it hits its target.
+	TargetLocation = FVector{ 0,0,0 };
 }
 
 // Called when the game starts or when spawned
@@ -43,16 +44,52 @@ void AProjectile::BeginPlay()
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	InitializeProjectile(MyEnemyTarget);
+	if (bIsHoming && bIsInitialized)
+	{ 
+		if (MyEnemyTarget)
+		{
+			InitializeProjectile(bIsSingleTarget, MyEnemyTarget);
+		}
+	}
+	if (TargetLocation != FVector{ 0,0,0 }) 
+	{
+		// We have a set distance, check if we reached it
+		if (TargetLocation.UpVector == GetActorLocation().UpVector) 
+		{
+			Destroy();
+		}
+	}
+	
 }
 
-void AProjectile::InitializeProjectile(AMOBACharacter* Target) 
+// Update the Destination based on the target's current position
+void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget, FVector Direction, float MaxDistance)
 {
-	if (Target)
+	// If Target is specified, then the projectile is a homing projectile
+	if (CharacterTarget)
 	{
-		MyEnemyTarget = Target;
-		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), MyEnemyTarget->GetActorLocation()).Vector();
+		bIsHoming = true;
+		bIsSingleTarget = IsSingleTarget;
+		MyEnemyTarget = CharacterTarget;
+		USceneComponent* ProjectileTarget = CharacterTarget->GetRootComponent();
+		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * (UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), ProjectileTarget->GetSocketLocation((TEXT("neck_01"))))).Vector();
+		bIsInitialized = true;
 	}
+	// If no target, then moving in a direction. Direction is either infinite or defined.
+	else if (Direction != FVector{0, 0, 0})
+	{
+		bIsHoming = false;
+		bIsSingleTarget = IsSingleTarget;
+		SetActorRotation(Direction.Rotation());
+		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * Direction;
+		// If a Distance to travel is specified.
+		if (MaxDistance > 0) 
+		{
+			TargetLocation = Direction.UpVector * MaxDistance;
+		}
+		bIsInitialized = true;
+	}
+	else Destroy();
 }
 
 void AProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) 

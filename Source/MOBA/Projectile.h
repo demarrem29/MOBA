@@ -34,6 +34,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyEnemyTarget;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+		bool bIsHoming = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
+		bool bIsInitialized = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+		bool bIsSingleTarget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
+		FVector TargetLocation;
+
 	// Sphere collision component.
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 		USphereComponent* CollisionComponent;
@@ -44,9 +56,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void OnTargetReached(AMOBACharacter* InTarget);
-
+	
 	UFUNCTION(BlueprintCallable)
-		void InitializeProjectile(AMOBACharacter* Target);
+		void InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget = NULL, FVector Direction = FVector(0,0,0), float MaxDistance = 0.0f);
 
 	// Handler for when projectile overlaps something
 	UFUNCTION()

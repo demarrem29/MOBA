@@ -1,6 +1,7 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "MOBAPlayerController.h"
+#include "Components/CapsuleComponent.h"
 
 AMOBAPlayerController::AMOBAPlayerController()
 {
@@ -38,12 +39,16 @@ void AMOBAPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
-
+	// Mouse Bindings
 	InputComponent->BindAction("RightClick", IE_Pressed, this, &AMOBAPlayerController::OnRightClickPressed);
 	InputComponent->BindAction("RightClick", IE_Released, this, &AMOBAPlayerController::OnRightClickReleased);
 	InputComponent->BindAction("LeftClick", IE_Pressed, this, &AMOBAPlayerController::OnLeftClickPressed);
 	InputComponent->BindAction("LeftClick", IE_Released, this, &AMOBAPlayerController::OnLeftClickReleased);
+	
+	// Default keyboard input "S" to stop moving and attacking
 	InputComponent->BindAction("Stop", IE_Pressed, this, &AMOBAPlayerController::Stop);
+	// Default keyboard input "A" to set a new target. Left clicking on the ground does attack move to location.
+	// Left clicking on an enemy starts performing basic attacks on them. Right click to cancel.
 	InputComponent->BindAction("Attack", IE_Pressed, this, &AMOBAPlayerController::Attack);
 }
 
@@ -119,12 +124,14 @@ void AMOBAPlayerController::MoveToEnemyTarget()
 	if (MyCharacter->MyEnemyTarget && MyAIController) 
 	{
 		FVector MyLocation = MyCharacter->GetActorLocation();
+		UCapsuleComponent* mycapsule = MyCharacter->GetCapsuleComponent();
 		FVector TargetLocation = MyCharacter->MyEnemyTarget->GetActorLocation();
-		float distance = FVector::Dist2D(MyLocation, TargetLocation);
+		UCapsuleComponent* targetcapsule = MyCharacter->MyEnemyTarget->GetCapsuleComponent();
+		float distance = FVector::Dist2D(MyLocation, TargetLocation) - targetcapsule->GetScaledCapsuleRadius();
 		// Move to the target if out of range
 		if (distance > MyCharacter->AttributeSet->AttackRange.GetCurrentValue())
 		{
-			MyAIController->MoveToLocation(TargetLocation, 0.95*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
+			MyAIController->MoveToLocation(TargetLocation, 0.99*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), true, true, false, false, 0, true);
 		}
 		// We're in range, try to attack
 		else 
