@@ -86,7 +86,7 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 			{
 				if (IsHostile(*Cast<AMOBACharacter>(OverlappedActor))) 
 				{
-					currentdistance = FVector::Dist2D(MyCharacter->GetActorLocation(), OverlappedActor->GetActorLocation());
+					currentdistance = FVector::Dist2D(AttackCollisionSphere->GetComponentLocation(), OverlappedActor->GetActorLocation());
 					if (minimumdistance == -1)
 					{
 						minimumdistance = currentdistance;
@@ -103,7 +103,7 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 		}
 		else
 		{
-			MyAIController->MoveToLocation(AttackTarget, 0.95*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), false, true, false, false, 0, true);
+			MyAIController->MoveToLocation(AttackTarget, 10.0f, true, true, false, false, 0, true);
 		}
 	}
 	else MovementType = EMovementType::None;
@@ -123,19 +123,15 @@ void AMOBAPlayerController::MoveToEnemyTarget()
 {
 	if (MyCharacter->MyEnemyTarget && MyAIController) 
 	{
-		FVector MyLocation = MyCharacter->GetActorLocation();
-		UCapsuleComponent* mycapsule = MyCharacter->GetCapsuleComponent();
-		FVector TargetLocation = MyCharacter->MyEnemyTarget->GetActorLocation();
-		UCapsuleComponent* targetcapsule = MyCharacter->MyEnemyTarget->GetCapsuleComponent();
-		float distance = FVector::Dist2D(MyLocation, TargetLocation) - targetcapsule->GetScaledCapsuleRadius();
 		// Move to the target if out of range
-		if (distance > MyCharacter->AttributeSet->AttackRange.GetCurrentValue())
+		if (!MyCharacter->RangeDetector->IsOverlappingActor(MyCharacter->MyEnemyTarget))
 		{
-			MyAIController->MoveToLocation(TargetLocation, 0.99*MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), true, true, false, false, 0, true);
+			MyAIController->MoveToLocation(MyCharacter->MyEnemyTarget->GetActorLocation(), MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), true, true, false, false, 0, true);
 		}
 		// We're in range, try to attack
 		else 
 		{
+			MyAIController->StopMovement();
 			MyCharacter->bIsAttacking = true;
 			MyCharacter->TryBasicAttack();
 		}
