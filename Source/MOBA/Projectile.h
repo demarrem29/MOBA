@@ -33,9 +33,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyEnemyTarget;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
-		bool bIsHoming = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
 		bool bIsInitialized = false;

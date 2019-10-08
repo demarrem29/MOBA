@@ -25,6 +25,8 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
 	ProjectileMovementComponent->InitialSpeed = 1500.0f;
 	ProjectileMovementComponent->MaxSpeed = 1500.0f;
+	ProjectileMovementComponent->Velocity = FVector{ 0,0,0 };
+	ProjectileMovementComponent->bIsHomingProjectile = false;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = false;
 	InitialLifeSpan = 0.0f; // Projectile lives until it hits its target.
@@ -41,13 +43,6 @@ void AProjectile::BeginPlay()
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bIsHoming && bIsInitialized)
-	{ 
-		if (MyEnemyTarget)
-		{
-			InitializeProjectile(bIsSingleTarget, MyEnemyTarget);
-		}
-	}
 	if (TargetLocation != FVector{ 0,0,0 }) 
 	{
 		// We have a set distance, check if we reached it
@@ -55,8 +50,7 @@ void AProjectile::Tick(float DeltaTime)
 		{
 			Destroy();
 		}
-	}
-	
+	}	
 }
 
 // Update the Destination based on the target's current position
@@ -65,17 +59,15 @@ void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* Char
 	// If Target is specified, then the projectile is a homing projectile
 	if (CharacterTarget)
 	{
-		bIsHoming = true;
+		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->GetRootComponent();
+		ProjectileMovementComponent->bIsHomingProjectile = true;
 		bIsSingleTarget = IsSingleTarget;
 		MyEnemyTarget = CharacterTarget;
-		USceneComponent* ProjectileTarget = CharacterTarget->GetRootComponent();
-		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * (UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), ProjectileTarget->GetSocketLocation((TEXT("neck_01"))))).Vector() * FVector { 1, 1, 0 };
 		bIsInitialized = true;
 	}
 	// If no target, then moving in a direction. Direction is either infinite or defined.
 	else if (Direction != FVector{0, 0, 0})
 	{
-		bIsHoming = false;
 		bIsSingleTarget = IsSingleTarget;
 		SetActorRotation(Direction.Rotation());
 		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * Direction;
