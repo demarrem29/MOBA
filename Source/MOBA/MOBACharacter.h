@@ -8,6 +8,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayAbilitySpec.h"
 #include "Components/SphereComponent.h"
+#include "EquipmentComponent.h"
 #include "MOBACharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCombatStatusChange, bool, bIsAttacking, bool, bIsInCombat);
@@ -51,6 +52,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Ability System")
 		class UMOBAAttributeSet* AttributeSet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipment")
+		class UEquipmentComponent* EquipmentComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 		ETeam MyTeam;

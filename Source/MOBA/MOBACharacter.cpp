@@ -35,6 +35,7 @@ AMOBACharacter::AMOBACharacter()
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("Ability System Component");
 	AttributeSet = CreateDefaultSubobject<UMOBAAttributeSet>("Attribute Set");
+	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("Equipment");
 
 	// Set Default Combat Values
 	bIsAttacking = false;
