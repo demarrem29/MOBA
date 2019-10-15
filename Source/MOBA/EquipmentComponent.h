@@ -9,7 +9,9 @@
 #include "Image.h"
 #include "EquipmentComponent.generated.h"
 
-// Enum defining types of inventory slots
+
+class AMOBACharacter;
+// Enum defining types of items
 UENUM(BlueprintType)
 enum class EItemType : uint8 
 {
@@ -17,22 +19,38 @@ enum class EItemType : uint8
 	Armor UMETA(DisplayName = "Armor"),
 	BrainImplant UMETA(DisplayName = "BrainImplant"),
 	BodyImplant UMETA(DisplayName = "BodyImplant"),
-	MainHandWeapon UMETA(DisplayName = "MainHandWeapon"),
-	OffHandWeapon UMETA(DisplayName = "OffHandWeapon"),
-	OffHandSource UMETA(DisplayName = "OffHandSource"),
-	TwoHandWeapon UMETA(DisplayName = "TwoHandWeapon"),
+	OneHand UMETA(DisplayName = "OneHandWeapon"),
+	TwoHand UMETA(DisplayName = "TwoHandWeapon"),
+	Source UMETA(DisplayName = "Source"),
 	ArmorModule UMETA(DisplayName = "ArmorModule"),
 	WeaponModule UMETA(DisplayName = "WeaponModule")
 };
 
-// Base characteristics that all items have
-USTRUCT(BlueprintType)
-struct FItem
+// Enum defining types of equipment slots
+UENUM(BlueprintType)
+enum class ESlotType : uint8
 {
-	GENERATED_BODY();
-	
-	FItem();
+	Consumable UMETA(DisplayName = "ConsumableSlot"),
+	Armor UMETA(DisplayName = "ArmorSlot"),
+	BrainImplant UMETA(DisplayName = "BrainImplantSlot"),
+	BodyImplant UMETA(DisplayName = "BodyImplantSlot"),
+	MainHand UMETA(DisplayName = "MainHandSlot"),
+	OffHand UMETA(DisplayName = "OffHandSlot"),
+};
 
+// Base characteristics that all items have
+UCLASS(Blueprintable, BlueprintType)
+class UItem : public UObject
+{
+	GENERATED_BODY()
+	
+	
+protected:
+	UItem();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	AMOBACharacter* MyOwner;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
 	EItemType ItemType;
 
@@ -40,34 +58,60 @@ struct FItem
 	FName ItemName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
-	UImage* ItemIcon;
+	UTexture2D* IconImageSource;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemProperties")
+	UImage* IconImage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
 	int32 NumModuleSlots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Abilities")
-	TArray<UGameplayAbility*> GrantedAbilities;
+	TArray<TSubclassOf<class UGameplayAbility>> GrantedAbilities;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Effects")
-	TArray<UGameplayEffect*> GrantedEffects;
+	TArray<TSubclassOf<class UGameplayEffect>> GrantedEffects;
+public:
+	bool Equip(AMOBACharacter* Owner);
+
+	bool UnEquip();
+
+	FORCEINLINE AMOBACharacter* GetOwner() { return MyOwner; }
+	FORCEINLINE EItemType GetItemType() { return ItemType; }
+	FORCEINLINE FName GetItemName() { return ItemName; }
+	FORCEINLINE int32 GetNumSlots() { return NumModuleSlots; }
 };
 
 // Weapon-specific characteristics like damage, attack speed, etc.
-USTRUCT(BlueprintType)
-struct FWeapon : public FItem 
+UCLASS(Blueprintable, BlueprintType)
+class UWeapon : public UItem 
 {
-	GENERATED_BODY();
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
+	GENERATED_BODY()
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
 	int32 MinDamage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
 	int32 MaxDamage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
 	float AttackSpeed;
-};
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
+	bool bUseProjectile;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
+	const TSubclassOf<class AProjectile> ProjectileClass;
+
+public:
+	FORCEINLINE int32 GetMinDamage() { return MinDamage; }
+	FORCEINLINE int32 GetMaxDamage() { return MaxDamage; }
+	FORCEINLINE float GetAttackSpeed() { return AttackSpeed; }
+	FORCEINLINE float GetAttackRange() { return AttackRange; }
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MOBA_API UEquipmentComponent : public UActorComponent
@@ -78,8 +122,11 @@ public:
 	// Sets default values for this component's properties
 	UEquipmentComponent();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InventorySlots")
-	TMap<EItemType, FItem> InventorySlots;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TArray<TSubclassOf<UItem>> Inventory;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EquipmentSlots")
+	TMap<ESlotType, TSubclassOf<UItem>> EquipmentSlots;
 
 protected:
 	// Called when the game starts
@@ -87,7 +134,5 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-		
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;		
 };

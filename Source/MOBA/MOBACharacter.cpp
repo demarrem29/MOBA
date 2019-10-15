@@ -119,7 +119,9 @@ void AMOBACharacter::BeginPlay()
 		AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::ExperienceChange);
 		AttributeSet->AttackPowerChange.AddDynamic(this, &AMOBACharacter::AttackPowerChange);
 		AttributeSet->SpellPowerChange.AddDynamic(this, &AMOBACharacter::SpellPowerChange);
-		AttributeSet->AttackSpeedChange.AddDynamic(this, &AMOBACharacter::AttackSpeedChange);
+		AttributeSet->MainHandAttackSpeedChange.AddDynamic(this, &AMOBACharacter::MainHandAttackSpeedChange);
+		AttributeSet->OffHandAttackSpeedChange.AddDynamic(this, &AMOBACharacter::OffHandAttackSpeedChange);		
+		AttributeSet->BonusAttackSpeedChange.AddDynamic(this, &AMOBACharacter::BonusAttackSpeedChange);
 		AttributeSet->CriticalChanceChange.AddDynamic(this, &AMOBACharacter::CriticalChanceChange);
 		AttributeSet->CriticalDamageChange.AddDynamic(this, &AMOBACharacter::CriticalDamageChange);
 		AttributeSet->AttackRangeChange.AddDynamic(this, &AMOBACharacter::AttackRangeChange);
@@ -177,9 +179,17 @@ void AMOBACharacter::SpellPowerChange(FGameplayAttributeData SpellPower)
 {
 	BP_SpellPowerChange(SpellPower);
 }
-void AMOBACharacter::AttackSpeedChange(FGameplayAttributeData AttackSpeed)
+void AMOBACharacter::MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed)
 {
-	BP_AttackSpeedChange(AttackSpeed);
+	BP_MainHandAttackSpeedChange(MainHandAttackSpeed);
+}
+void AMOBACharacter::OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed)
+{
+	BP_OffHandAttackSpeedChange(OffHandAttackSpeed);
+}
+void AMOBACharacter::BonusAttackSpeedChange(FGameplayAttributeData BonusAttackSpeed)
+{
+	BP_BonusAttackSpeedChange(BonusAttackSpeed);
 }
 void AMOBACharacter::CriticalChanceChange(FGameplayAttributeData CriticalChance)
 {

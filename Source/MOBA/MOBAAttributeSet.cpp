@@ -16,7 +16,9 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	,MaxExperience(280.0f)
 	,AttackPower(55.0f)
 	,SpellPower(0.0f)
-	,AttackSpeed(0.7f)
+	,MainHandAttackSpeed(0.7f)
+	,OffHandAttackSpeed(0.7f)
+	,BonusAttackSpeed(0.0f)
 	,CriticalChance(0.1f)
 	,CriticalDamage(2.0f)
 	,AttackRange(150.0f)
@@ -160,10 +162,10 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 		SpellPower = FMath::Clamp(SpellPower.GetCurrentValue(), 0.0f, 2000.0f);
 		SpellPowerChange.Broadcast(SpellPower);
 	}
-	if (AttackSpeedAttribute() == Data.EvaluatedData.Attribute)
+	if (BonusAttackSpeedAttribute() == Data.EvaluatedData.Attribute)
 	{
-		AttackSpeed = FMath::Clamp(AttackSpeed.GetCurrentValue(), 0.0f, 2.5f);
-		AttackSpeedChange.Broadcast(AttackSpeed);
+		BonusAttackSpeed = FMath::Clamp(BonusAttackSpeed.GetCurrentValue(), 0.0f, 1000.0f);
+		BonusAttackSpeedChange.Broadcast(BonusAttackSpeed);
 	}
 	if (CriticalChanceAttribute() == Data.EvaluatedData.Attribute)
 	{
@@ -255,9 +257,19 @@ FGameplayAttribute UMOBAAttributeSet::SpellPowerAttribute()
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, SpellPower));
 	return FGameplayAttribute(Property);
 }
-FGameplayAttribute UMOBAAttributeSet::AttackSpeedAttribute() 
+FGameplayAttribute UMOBAAttributeSet::MainHandAttackSpeedAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackSpeed));
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackSpeed));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::OffHandAttackSpeedAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackSpeed));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::BonusAttackSpeedAttribute() 
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, BonusAttackSpeed));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute() 

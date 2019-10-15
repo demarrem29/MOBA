@@ -107,7 +107,11 @@ public:
 	UFUNCTION()
 		void SpellPowerChange(FGameplayAttributeData SpellPower);
 	UFUNCTION()
-		void AttackSpeedChange(FGameplayAttributeData AttackSpeed);
+		void MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed);
+	UFUNCTION()
+		void OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed);
+	UFUNCTION()
+		void BonusAttackSpeedChange(FGameplayAttributeData BonusttackSpeed);
 	UFUNCTION()
 		void CriticalChanceChange(FGameplayAttributeData CriticalChance);
 	UFUNCTION()
@@ -153,7 +157,11 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_SpellPowerChange(FGameplayAttributeData SpellPower);
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_AttackSpeedChange(FGameplayAttributeData AttackSpeed);
+		void BP_MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_BonusAttackSpeedChange(FGameplayAttributeData BonusAttackSpeed);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_CriticalChanceChange(FGameplayAttributeData CriticalChance);
 	UFUNCTION(BlueprintImplementableEvent)

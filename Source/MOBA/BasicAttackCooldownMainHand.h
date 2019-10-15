@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameplayModMagnitudeCalculation.h"
 #include "MOBAAttributeSet.h"
-#include "BasicAttackCooldown.generated.h"
+#include "BasicAttackCooldownMainHand.generated.h"
 
 /**
  * 
  */
-UCLASS(BlueprintType, Blueprintable, Abstract)
-class MOBA_API UBasicAttackCooldown : public UGameplayModMagnitudeCalculation
+UCLASS()
+class MOBA_API UBasicAttackCooldownMainHand : public UGameplayModMagnitudeCalculation
 {
 	GENERATED_UCLASS_BODY()
 

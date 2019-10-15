@@ -26,7 +26,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FLevelChange, FGameplayAttributeDat
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FExperienceChange, FGameplayAttributeData, Experience, FGameplayAttributeData, MaxExperience);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttackPowerChange, FGameplayAttributeData, AttackPower);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpellPowerChange, FGameplayAttributeData, SpellPower);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttackSpeedChange, FGameplayAttributeData, AttackSpeed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMainHandAttackSpeedChange, FGameplayAttributeData, MainHandAttackSpeed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOffHandAttackSpeedChange, FGameplayAttributeData, OffHandAttackSpeed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBonusAttackSpeedChange, FGameplayAttributeData, BonusAttackSpeed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCriticalChanceChange, FGameplayAttributeData, CriticalChance);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCriticalDamageChange, FGameplayAttributeData, CriticalDamage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttackRangeChange, FGameplayAttributeData, AttackRange);
@@ -79,9 +81,15 @@ public:
 
 	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
 		FGameplayAttributeData SpellPower;
+	
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite) // Attack speed from items or abilities
+		FGameplayAttributeData MainHandAttackSpeed;
 
-	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite) // Attack frequency. For example, default is 0.7 attacks per second
-		FGameplayAttributeData AttackSpeed;
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite) // Extra attack speed from items or abilities
+		FGameplayAttributeData OffHandAttackSpeed;
+
+	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite) // Extra attack speed from items or abilities
+		FGameplayAttributeData BonusAttackSpeed;
 
 	UPROPERTY(Category = "Attributes | Combat", EditAnywhere, BlueprintReadWrite)
 		FGameplayAttributeData CriticalChance;
@@ -128,7 +136,9 @@ public:
 	FGameplayAttribute ExperienceAttribute();
 	FGameplayAttribute AttackPowerAttribute();
 	FGameplayAttribute SpellPowerAttribute();
-	FGameplayAttribute AttackSpeedAttribute();
+	FGameplayAttribute MainHandAttackSpeedAttribute();
+	FGameplayAttribute OffHandAttackSpeedAttribute();
+	FGameplayAttribute BonusAttackSpeedAttribute();
 	FGameplayAttribute CriticalChanceAttribute();
 	FGameplayAttribute CriticalDamageAttribute();
 	FGameplayAttribute AttackRangeAttribute();
@@ -148,7 +158,9 @@ public:
 	FExperienceChange ExperienceChange;
 	FAttackPowerChange AttackPowerChange;
 	FSpellPowerChange SpellPowerChange;
-	FAttackSpeedChange AttackSpeedChange;
+	FMainHandAttackSpeedChange MainHandAttackSpeedChange;
+	FOffHandAttackSpeedChange OffHandAttackSpeedChange;
+	FBonusAttackSpeedChange BonusAttackSpeedChange;
 	FCriticalChanceChange CriticalChanceChange;
 	FCriticalDamageChange CriticalDamageChange;
 	FAttackRangeChange AttackRangeChange;
