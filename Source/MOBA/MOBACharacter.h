@@ -77,6 +77,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 		USphereComponent* RangeDetector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ProjectileTarget") // Scene component for homing projectiles to target.
+		USceneComponent* ProjectileTarget;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")

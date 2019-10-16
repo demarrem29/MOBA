@@ -40,11 +40,19 @@ AMOBACharacter::AMOBACharacter()
 	// Set Default Combat Values
 	bIsAttacking = false;
 	bIsInCombat = false;
+
+	// Configure Range Detector
 	RangeDetector = CreateDefaultSubobject<USphereComponent>("Attack Range Indicator");
 	RangeDetector->SetGenerateOverlapEvents(true);
 	RangeDetector->SetupAttachment(RootComponent);
 	RangeDetector->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	RangeDetector->bHiddenInGame = true;
+
+	// Configure Projectile Target: Provides a height offset for homing projectiles to target.
+	ProjectileTarget = CreateDefaultSubobject<USceneComponent>("Projectile Target Component");
+	ProjectileTarget->SetupAttachment(RootComponent);
+	ProjectileTarget->SetRelativeLocation(FVector{ 0,0,50 });
+
 	// Initialize Any Attributes that require additional logic outside of default attribute values
 	ACharacter* Char = Cast<ACharacter>(GetParentActor());
 	if (AttributeSet)

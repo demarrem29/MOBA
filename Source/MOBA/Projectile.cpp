@@ -29,6 +29,9 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->bIsHomingProjectile = false;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = false;
+	ProjectileMovementComponent->ProjectileGravityScale = 0;
+	ProjectileMovementComponent->Friction = 0;
+	ProjectileMovementComponent->HomingAccelerationMagnitude = 20000; // Instantly hit max speed
 	InitialLifeSpan = 0.0f; // Projectile lives until it hits its target.
 	TargetLocation = FVector{ 0,0,0 };
 }
@@ -36,7 +39,8 @@ AProjectile::AProjectile()
 // Called when the game starts or when spawned
 void AProjectile::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
+	SpawnedLocation = GetActorLocation();
 }
 
 // Called every frame
@@ -46,7 +50,7 @@ void AProjectile::Tick(float DeltaTime)
 	if (TargetLocation != FVector{ 0,0,0 }) 
 	{
 		// We have a set distance, check if we reached it
-		if (TargetLocation.UpVector == GetActorLocation().UpVector) 
+		if (FVector::Dist2D(SpawnedLocation,GetActorLocation()) >= MaxDistance) 
 		{
 			Destroy();
 		}
@@ -54,12 +58,12 @@ void AProjectile::Tick(float DeltaTime)
 }
 
 // Update the Destination based on the target's current position
-void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget, FVector Direction, float MaxDistance)
+void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget, FVector Direction, float InMaxDistance)
 {
 	// If Target is specified, then the projectile is a homing projectile
 	if (CharacterTarget)
 	{
-		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->GetRootComponent();
+		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->ProjectileTarget;
 		ProjectileMovementComponent->bIsHomingProjectile = true;
 		bIsSingleTarget = IsSingleTarget;
 		MyEnemyTarget = CharacterTarget;
@@ -72,9 +76,10 @@ void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* Char
 		SetActorRotation(Direction.Rotation());
 		ProjectileMovementComponent->Velocity = ProjectileMovementComponent->InitialSpeed * Direction;
 		// If a Distance to travel is specified.
-		if (MaxDistance > 0) 
+		if (InMaxDistance > 0) 
 		{
-			TargetLocation = Direction.UpVector * MaxDistance;
+			TargetLocation = Direction.UpVector * InMaxDistance;
+			MaxDistance = InMaxDistance;
 		}
 		bIsInitialized = true;
 	}

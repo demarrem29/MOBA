@@ -41,7 +41,13 @@ public:
 		bool bIsSingleTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
+		FVector SpawnedLocation;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
 		FVector TargetLocation;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
+		float MaxDistance;
 
 	// Sphere collision component.
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
@@ -55,7 +61,7 @@ public:
 		void OnTargetReached(AMOBACharacter* InTarget);
 	
 	UFUNCTION(BlueprintCallable)
-		void InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget = NULL, FVector Direction = FVector(0,0,0), float MaxDistance = 0.0f);
+		void InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget = NULL, FVector Direction = FVector(0,0,0), float InMaxDistance = 0.0f);
 
 	// Handler for when projectile overlaps something
 	UFUNCTION()
