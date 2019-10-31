@@ -77,16 +77,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 		USphereComponent* RangeDetector;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+		bool IsHostile(AMOBACharacter* TargetCharacter);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ProjectileTarget") // Scene component for homing projectiles to target.
 		USceneComponent* ProjectileTarget;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
-	void AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcquire);
+		void AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcquire);
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+		void RemoveAbility(TSubclassOf<UGameplayAbility> AbilityToRemove);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 		float GetBasicAttackCooldown();
+
+	FTimerHandle CombatTimerHandle;	
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
@@ -193,5 +201,8 @@ public:
 		void BP_TryBasicAttack();
 	
 	FCombatStatusChange CombatStatusChangeDelegate;
+
+protected:
+	void CombatTimerCallback();
 };
 

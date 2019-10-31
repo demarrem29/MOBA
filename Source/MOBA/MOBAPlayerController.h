@@ -77,7 +77,7 @@ protected:
 
 	// Attack Input bools
 	bool bAttackPending;
-	bool IsHostile(AMOBACharacter& TargetCharacter);
+	
 
 	virtual void BeginPlay() override;
 };

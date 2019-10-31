@@ -86,7 +86,23 @@ void AMOBACharacter::AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcqui
 		}
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
-	
+}
+
+void AMOBACharacter::RemoveAbility(TSubclassOf<UGameplayAbility> AbilityToRemove) 
+{
+	if (AbilitySystemComponent)
+	{
+		if (HasAuthority() && AbilityToRemove)
+		{
+			FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(AbilityToRemove);
+			if (AbilitySpec) 
+			{
+				FGameplayAbilitySpecHandle SpecHandle = AbilitySpec->Handle;
+				AbilitySystemComponent->ClearAbility(SpecHandle);
+			}
+		}
+		AbilitySystemComponent->RefreshAbilityActorInfo();
+	}
 }
 
 float AMOBACharacter::GetBasicAttackCooldown() 
@@ -103,6 +119,20 @@ float AMOBACharacter::GetBasicAttackCooldown()
 		}
 	}
 	return 0.0f;
+}
+
+// Check and see if another character is hostile (should we allow attacks or abilities on this target)
+bool AMOBACharacter::IsHostile(AMOBACharacter* TargetCharacter)
+{
+	if (TargetCharacter->IsValidLowLevel() && this->IsValidLowLevel())
+	{
+		if (this->MyTeam != TargetCharacter->MyTeam && TargetCharacter->MyTeam != ETeam::NeutralFriendly)
+		{
+			return true;
+		}
+		else return false;
+	}
+	else return false;
 }
 
 void AMOBACharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) 
@@ -249,6 +279,14 @@ void AMOBACharacter::MovementSpeedChange(FGameplayAttributeData MovementSpeed)
 
 void AMOBACharacter::CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn) 
 {
+	if (bIsInCombatIn) 
+	{
+		UWorld* World = GetWorld();
+		if (World) 
+		{
+			World->GetTimerManager().SetTimer(CombatTimerHandle, this, &AMOBACharacter::CombatTimerCallback, 5.0f, false);
+		}
+	}
 	BP_CombatStatusChange(bIsAttackingIn, bIsInCombatIn);
 }
 
@@ -278,4 +316,10 @@ void AMOBACharacter::TryBasicAttack()
 	{
 		BP_TryBasicAttack();
 	}
+}
+
+void AMOBACharacter::CombatTimerCallback() 
+{
+	bIsInCombat = false;
+	CombatStatusChangeDelegate.Broadcast(bIsAttacking, bIsInCombat);
 }

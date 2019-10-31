@@ -2,6 +2,7 @@
 
 
 #include "MOBAAttributeSet.h"
+#include "MOBACharacter.h"
 
 UMOBAAttributeSet::UMOBAAttributeSet() 
 	:Health(500.0f)
@@ -17,7 +18,7 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	,AttackPower(55.0f)
 	,SpellPower(0.0f)
 	,MainHandAttackSpeed(0.7f)
-	,OffHandAttackSpeed(0.7f)
+	,OffHandAttackSpeed(0.0f)
 	,BonusAttackSpeed(0.0f)
 	,CriticalChance(0.1f)
 	,CriticalDamage(2.0f)
@@ -55,7 +56,17 @@ float UMOBAAttributeSet::CalculateDamageReduction(float ResistanceStat)
 void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
 	UAbilitySystemComponent* Source = Data.EffectSpec.GetContext().GetOriginalInstigatorAbilitySystemComponent();
-
+	AMOBACharacter* SourceActor = Cast<AMOBACharacter>(Source->GetOwner());
+	AMOBACharacter* MyActor = Cast<AMOBACharacter>(this->GetOwningActor());
+	// Check and see if the source actor is hostile, meaning this gameplay effect was offensive
+	if (MyActor && SourceActor && MyActor->IsHostile(SourceActor)) 
+	{
+		// Set both the source and target in combat and let everyone know
+		MyActor->bIsInCombat = true;
+		MyActor->CombatStatusChangeDelegate.Broadcast(MyActor->bIsAttacking, MyActor->bIsInCombat);
+		SourceActor->bIsInCombat = true;
+		SourceActor->CombatStatusChangeDelegate.Broadcast(SourceActor->bIsAttacking, SourceActor->bIsInCombat);
+	}
 	if (HealthAttribute() == Data.EvaluatedData.Attribute)
 	{
 		// Get the Target actor

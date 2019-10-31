@@ -84,7 +84,7 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 			float currentdistance;
 			for (auto& OverlappedActor : OverlappedActors)
 			{
-				if (IsHostile(*Cast<AMOBACharacter>(OverlappedActor))) 
+				if (MyCharacter->IsHostile(Cast<AMOBACharacter>(OverlappedActor))) 
 				{
 					currentdistance = FVector::Dist2D(AttackCollisionSphere->GetComponentLocation(), OverlappedActor->GetActorLocation());
 					if (minimumdistance == -1)
@@ -167,7 +167,7 @@ void AMOBAPlayerController::OnRightClickPressed()
 			{
 				ETeam SourceTeam = MyCharacter->MyTeam;
 				ETeam TargetTeam = HitCharacter->MyTeam;
-				if (IsHostile(*HitCharacter)) // Check if the target is hostile
+				if (MyCharacter->IsHostile(HitCharacter)) // Check if the target is hostile
 				{
 					// Yes, target is hostile. Set character to attack
 					MyCharacter->bIsAttacking = true;
@@ -234,7 +234,7 @@ void AMOBAPlayerController::OnLeftClickPressed()
 	{
 		if (Cast<AMOBACharacter>(HitResult.GetActor())) 
 		{
-			if (IsHostile(*Cast<AMOBACharacter>(HitResult.GetActor()))) 
+			if (MyCharacter->IsHostile(Cast<AMOBACharacter>(HitResult.GetActor()))) 
 			{
 				MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(HitResult.GetActor());
 				MovementType = EMovementType::MoveToEnemyTarget;
@@ -287,20 +287,6 @@ void AMOBAPlayerController::Attack()
 		bAttackPending = true;
 		CurrentMouseCursor = EMouseCursor::Crosshairs;
 	}
-}
-
-// Check and see if another character is hostile (should we allow attacks or abilities on this target)
-bool AMOBAPlayerController::IsHostile(AMOBACharacter& TargetCharacter) 
-{
-	if (TargetCharacter.IsValidLowLevel() && MyCharacter->IsValidLowLevel()) 
-	{
-		if (MyCharacter->MyTeam != TargetCharacter.MyTeam && TargetCharacter.MyTeam != ETeam::NeutralFriendly) 
-		{
-			return true;
-		}
-		else return false;
-	}
-	else return false;
 }
 
 void AMOBAPlayerController::BeginPlay() 
