@@ -31,7 +31,6 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->bShouldBounce = false;
 	ProjectileMovementComponent->ProjectileGravityScale = 0;
 	ProjectileMovementComponent->Friction = 0;
-	ProjectileMovementComponent->HomingAccelerationMagnitude = 20000; // Instantly hit max speed
 	InitialLifeSpan = 0.0f; // Projectile lives until it hits its target.
 	TargetLocation = FVector{ 0,0,0 };
 }
@@ -63,8 +62,9 @@ void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* Char
 	// If Target is specified, then the projectile is a homing projectile
 	if (CharacterTarget)
 	{
-		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->ProjectileTarget;
 		ProjectileMovementComponent->bIsHomingProjectile = true;
+		ProjectileMovementComponent->HomingAccelerationMagnitude = 10000; // Instantly hit max speed
+		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->ProjectileTarget;
 		bIsSingleTarget = IsSingleTarget;
 		MyEnemyTarget = CharacterTarget;
 		bIsInitialized = true;
