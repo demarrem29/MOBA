@@ -57,14 +57,14 @@ void AProjectile::Tick(float DeltaTime)
 }
 
 // Update the Destination based on the target's current position
-void AProjectile::InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget, FVector Direction, float InMaxDistance)
+void AProjectile::InitializeProjectile(bool IsSingleTarget, ACharacter* CharacterTarget, FVector Direction, float InMaxDistance)
 {
 	// If Target is specified, then the projectile is a homing projectile
 	if (CharacterTarget)
 	{
 		ProjectileMovementComponent->bIsHomingProjectile = true;
 		ProjectileMovementComponent->HomingAccelerationMagnitude = 10000; // Instantly hit max speed
-		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->ProjectileTarget;
+		ProjectileMovementComponent->HomingTargetComponent = CharacterTarget->GetRootComponent();
 		bIsSingleTarget = IsSingleTarget;
 		MyEnemyTarget = CharacterTarget;
 		bIsInitialized = true;
@@ -90,17 +90,17 @@ void AProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 {
 	if (bIsInitialized) 
 	{
-		if (this->MyEnemyTarget)
+		if (MyEnemyTarget)
 		{
 			// Check if the overlapped component belongs to the enemy target
-			AMOBACharacter* othercharacter = Cast<AMOBACharacter>(OtherActor);
-			if (othercharacter == this->MyEnemyTarget)
+			ACharacter* othercharacter = Cast<ACharacter>(OtherActor);
+			if (othercharacter == MyEnemyTarget)
 			{
 				// We made it to the target, check if its the mesh 
 				if (othercharacter->GetMesh() == Cast<USkeletalMeshComponent>(OtherComp))
 				{
 					// broadcast a delegate and destroy ourself
-					this->OnTargetReached(this->MyEnemyTarget);
+					this->OnTargetReached(MyEnemyTarget);
 					this->Destroy();
 				}
 

@@ -31,26 +31,56 @@ class AMOBAPlayerController : public APlayerController
 public:
 	AMOBAPlayerController();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	APawn* MyPawn;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Pawn")
+		AMOBACharacter* MyCharacter;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	AMOBACharacter* MyCharacter;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Pawn")
+		AAIController* MyAIController;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	AAIController* MyAIController;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 		ETeam MyTeam;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+		APawn* MyCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		bool bFollowPlayerCharacter = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		float KeyboardScrollSpeed = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		float MouseScrollSpeed = 1.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float MouseX = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float MouseY = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float CameraForward = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float CameraBackward = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float CameraLeft = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+		float CameraRight = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 		EMovementType MovementType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 		FVector AttackLocation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
 		USphereComponent* AttackCollisionSphere;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
+		bool AttackCommandActive;
 
 protected:	
 	// Begin PlayerController interface
@@ -58,27 +88,39 @@ protected:
 	virtual void SetupInputComponent() override;
 	// End PlayerController interface
 
+	//Camera Functions
+	void MoveCamera();
 
 	/** Movement Functions. */
 	void MoveToMouseCursor();
 	void MoveToAttackLocation(FVector AttackTarget);
 	void MoveToFriendlyTarget();
 	void MoveToEnemyTarget();
+	void StopMontage();
 
 	/** Input handlers for mouse action. */
 	void OnRightClickPressed();
 	void OnRightClickReleased();
 	void OnLeftClickPressed();
 	void OnLeftClickReleased();
+	void CalculateMouseScroll();
 
 	/*  Input handlers for keyboard action. */
 	void Stop();
 	void Attack();
+	void ToggleCameraLock();
+	void MoveCameraForward();
+	void MoveCameraForwardReleased();
+	void MoveCameraBackward();
+	void MoveCameraBackwardReleased();
+	void MoveCameraLeft();
+	void MoveCameraLeftReleased();
+	void MoveCameraRight();
+	void MoveCameraRightReleased();
 
 	// Attack Input bools
 	bool bAttackPending;
 	
-
 	virtual void BeginPlay() override;
 };
 

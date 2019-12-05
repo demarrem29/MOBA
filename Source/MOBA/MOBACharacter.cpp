@@ -12,6 +12,8 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
+#include "MOBAGameplayAbility.h"
+#include "GameplayTagContainer.h"
 
 AMOBACharacter::AMOBACharacter()
 {
@@ -40,13 +42,6 @@ AMOBACharacter::AMOBACharacter()
 	// Set Default Combat Values
 	bIsAttacking = false;
 	bIsInCombat = false;
-
-	// Configure Range Detector
-	RangeDetector = CreateDefaultSubobject<USphereComponent>("Attack Range Indicator");
-	RangeDetector->SetGenerateOverlapEvents(true);
-	RangeDetector->SetupAttachment(RootComponent);
-	RangeDetector->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	RangeDetector->bHiddenInGame = true;
 
 	// Configure Projectile Target: Provides a height offset for homing projectiles to target.
 	ProjectileTarget = CreateDefaultSubobject<USceneComponent>("Projectile Target Component");
@@ -83,8 +78,10 @@ void AMOBACharacter::AcquireAbility(TSubclassOf<UGameplayAbility> AbilityToAcqui
 			SpecDef.Ability = AbilityToAcquire;
 			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(SpecDef, 1);
 			AbilitySystemComponent->GiveAbility(AbilitySpec);
+			UMOBAGameplayAbility*  MOBAGameplayAbility = Cast<UMOBAGameplayAbility>(AbilityToAcquire);
 		}
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		
 	}
 }
 
@@ -105,6 +102,7 @@ void AMOBACharacter::RemoveAbility(TSubclassOf<UGameplayAbility> AbilityToRemove
 	}
 }
 
+// Check if we can perform a basic attack
 float AMOBACharacter::GetBasicAttackCooldown() 
 {
 	if (AbilitySystemComponent) 
@@ -119,6 +117,22 @@ float AMOBACharacter::GetBasicAttackCooldown()
 		}
 	}
 	return 0.0f;
+}
+
+// Check if the item (if any) in the offhand slot is a weapon (is off hand basic attack allowed?)
+bool AMOBACharacter::GetOffHandWeaponEquipped() 
+{
+	if (!EquipmentComponent) return false;
+	if (EquipmentComponent->EquipmentSlots.Contains(ESlotType::OffHand)) 
+	{
+		UEquipment* OffHandEquipment = *EquipmentComponent->EquipmentSlots.Find(ESlotType::OffHand);
+		UWeapon* OffHandWeapon = Cast<UWeapon>(OffHandEquipment);
+		if (OffHandWeapon) 
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 // Check and see if another character is hostile (should we allow attacks or abilities on this target)
@@ -146,23 +160,22 @@ void AMOBACharacter::BeginPlay()
 	Super::BeginPlay();
 	if (AttributeSet) {
 		CombatStatusChangeDelegate.AddDynamic(this, &AMOBACharacter::CombatStatusChange);
-		RangeDetector->SetSphereRadius(AttributeSet->AttackRange.GetCurrentValue());
 		AttributeSet->PhysicalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->Armor.GetCurrentValue());
 		AttributeSet->EnvironmentalDamageReduction = AttributeSet->CalculateDamageReduction(AttributeSet->EnvironmentalResistance.GetCurrentValue());
 		AttributeSet->HealthChange.AddDynamic(this, &AMOBACharacter::HealthChange);
 		AttributeSet->HealthRegenChange.AddDynamic(this, &AMOBACharacter::HealthRegenChange);
+		AttributeSet->HealingModifierChange.AddDynamic(this, &AMOBACharacter::HealingModifierChange);
 		AttributeSet->ManaChange.AddDynamic(this, &AMOBACharacter::ManaChange);
 		AttributeSet->ManaRegenChange.AddDynamic(this, &AMOBACharacter::ManaRegenChange);
 		AttributeSet->LevelChange.AddDynamic(this, &AMOBACharacter::LevelChange);
 		AttributeSet->ExperienceChange.AddDynamic(this, &AMOBACharacter::ExperienceChange);
 		AttributeSet->AttackPowerChange.AddDynamic(this, &AMOBACharacter::AttackPowerChange);
 		AttributeSet->SpellPowerChange.AddDynamic(this, &AMOBACharacter::SpellPowerChange);
-		AttributeSet->MainHandAttackSpeedChange.AddDynamic(this, &AMOBACharacter::MainHandAttackSpeedChange);
-		AttributeSet->OffHandAttackSpeedChange.AddDynamic(this, &AMOBACharacter::OffHandAttackSpeedChange);		
+		AttributeSet->MainHandChange.AddDynamic(this, &AMOBACharacter::MainHandChange);
+		AttributeSet->OffHandChange.AddDynamic(this, &AMOBACharacter::OffHandChange);		
 		AttributeSet->BonusAttackSpeedChange.AddDynamic(this, &AMOBACharacter::BonusAttackSpeedChange);
 		AttributeSet->CriticalChanceChange.AddDynamic(this, &AMOBACharacter::CriticalChanceChange);
 		AttributeSet->CriticalDamageChange.AddDynamic(this, &AMOBACharacter::CriticalDamageChange);
-		AttributeSet->AttackRangeChange.AddDynamic(this, &AMOBACharacter::AttackRangeChange);
 		AttributeSet->ArmorChange.AddDynamic(this, &AMOBACharacter::ArmorChange);
 		AttributeSet->PhysicalDamageReductionChange.AddDynamic(this, &AMOBACharacter::PhysicalDamageReductionChange);
 		AttributeSet->EnvironmentalResistanceChange.AddDynamic(this, &AMOBACharacter::EnvironmentalResistanceChange);
@@ -176,6 +189,11 @@ void AMOBACharacter::BeginPlay()
 		FOnGivenActiveGameplayEffectRemoved* GameplayEffectRemovedDelegate = &AbilitySystemComponent->OnAnyGameplayEffectRemovedDelegate();
 		GameplayEffectRemovedDelegate->AddUObject(this, &AMOBACharacter::OnGameplayEffectEnd);
 	}
+	if (EquipmentComponent) 
+	{
+		EquipmentComponent->OnInventoryChange.AddDynamic(this, &AMOBACharacter::InventoryChange);
+		EquipmentComponent->OnEquipmentChange.AddDynamic(this, &AMOBACharacter::EquipmentChange);
+	}
 }
 
 void AMOBACharacter::PossessedBy(AController* NewController) 
@@ -185,6 +203,14 @@ void AMOBACharacter::PossessedBy(AController* NewController)
 
 }
 
+void AMOBACharacter::InventoryChange() 
+{
+	BP_InventoryChange();
+}
+void AMOBACharacter::EquipmentChange()
+{
+	BP_EquipmentChange();
+}
 void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth) 
 {
 	BP_HealthChange(health, maxhealth);
@@ -192,6 +218,10 @@ void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttrib
 void AMOBACharacter::HealthRegenChange(FGameplayAttributeData HealthRegen)
 {
 	BP_HealthRegenChange(HealthRegen);
+}
+void AMOBACharacter::HealingModifierChange(FGameplayAttributeData HealingModifier)
+{
+	BP_HealingModifierChange(HealingModifier);
 }
 void AMOBACharacter::ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana)
 {
@@ -217,13 +247,13 @@ void AMOBACharacter::SpellPowerChange(FGameplayAttributeData SpellPower)
 {
 	BP_SpellPowerChange(SpellPower);
 }
-void AMOBACharacter::MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed)
+void AMOBACharacter::MainHandChange(FGameplayAttributeData MainHandAttackSpeed, FGameplayAttributeData MainHandMinDamage, FGameplayAttributeData MainHandMaxDamage, FGameplayAttributeData MainHandAttackRange)
 {
-	BP_MainHandAttackSpeedChange(MainHandAttackSpeed);
+	BP_MainHandChange(MainHandAttackSpeed, MainHandMinDamage,MainHandMaxDamage, MainHandAttackRange);
 }
-void AMOBACharacter::OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed)
+void AMOBACharacter::OffHandChange(FGameplayAttributeData OffHandAttackSpeed, FGameplayAttributeData OffHandMinDamage, FGameplayAttributeData OffHandMaxDamage, FGameplayAttributeData OffHandAttackRange)
 {
-	BP_OffHandAttackSpeedChange(OffHandAttackSpeed);
+	BP_OffHandChange(OffHandAttackSpeed, OffHandMinDamage, OffHandMaxDamage, OffHandAttackRange);
 }
 void AMOBACharacter::BonusAttackSpeedChange(FGameplayAttributeData BonusAttackSpeed)
 {
@@ -238,13 +268,9 @@ void AMOBACharacter::CriticalDamageChange(FGameplayAttributeData CriticalDamage)
 	BP_CriticalDamageChange(CriticalDamage);
 }
 
-void AMOBACharacter::AttackRangeChange(FGameplayAttributeData AttackRange)
-{
-	BP_AttackRangeChange(AttackRange);
-}
-
 void AMOBACharacter::ArmorChange(FGameplayAttributeData Armor)
 {
+	AttributeSet->PhysicalDamageReduction.SetCurrentValue(AttributeSet->CalculateDamageReduction(Armor.GetCurrentValue()));
 	BP_ArmorChange(Armor);
 }
 
@@ -255,6 +281,7 @@ void AMOBACharacter::PhysicalDamageReductionChange(FGameplayAttributeData Physic
 
 void AMOBACharacter::EnvironmentalResistanceChange(FGameplayAttributeData EnvironmentalResistance)
 {
+	AttributeSet->EnvironmentalDamageReduction.SetCurrentValue(AttributeSet->CalculateDamageReduction(EnvironmentalResistance.GetCurrentValue()));
 	BP_EnvironmentalResistanceChange(EnvironmentalResistance);
 }
 
@@ -287,6 +314,10 @@ void AMOBACharacter::CombatStatusChange(bool bIsAttackingIn, bool bIsInCombatIn)
 			World->GetTimerManager().SetTimer(CombatTimerHandle, this, &AMOBACharacter::CombatTimerCallback, 5.0f, false);
 		}
 	}
+	else 
+	{
+		bUseOffHandWeapon = false;
+	}
 	BP_CombatStatusChange(bIsAttackingIn, bIsInCombatIn);
 }
 
@@ -297,24 +328,43 @@ void AMOBACharacter::OnAbilityEnded(const FAbilityEndedData& AbilityEndData)
 
 void AMOBACharacter::OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect)
 {
-	
-	FName gameplayeffectname = EndedGameplayEffect.Spec.Def->GetFName();
-	// Check if the ended effect was the basic attack cooldown
-	if (gameplayeffectname == TEXT("Default__GE_BasicAttackCooldown_C"))
+	// Check if the effect was a basic attack cooldown
+	FGameplayTagContainer BasicAttackCooldownTagContainer;
+	FGameplayTagContainer EndedGameplayEffectContainer;
+	FGameplayTag BasicAttackCooldown;
+	BasicAttackCooldown = FGameplayTag::RequestGameplayTag(FName("Abilities.BasicAttack.Cooldown"));
+	BasicAttackCooldownTagContainer.AddTag(BasicAttackCooldown);
+	EndedGameplayEffect.Spec.GetAllGrantedTags(EndedGameplayEffectContainer);
+	if (EndedGameplayEffectContainer.HasAny(BasicAttackCooldownTagContainer)) 
 	{
 		// Basic Attack Cooldown Complete, try basic attack
 		TryBasicAttack();
-	}
-	
+	}	
 	BP_OnGameplayEffectEnd(EndedGameplayEffect);
 }
 
 void AMOBACharacter::TryBasicAttack()
 {
-	float cooldownremaining = GetBasicAttackCooldown();
-	if (cooldownremaining <= 0)
+	if (bIsAttacking && MyEnemyTarget) 
 	{
-		BP_TryBasicAttack();
+		float cooldownremaining = GetBasicAttackCooldown();
+		if (cooldownremaining <= 0)
+		{
+			if (GetOffHandWeaponEquipped())
+			{
+				BP_TryBasicAttack(bUseOffHandWeapon);
+				bUseOffHandWeapon = !bUseOffHandWeapon;
+			}
+			else BP_TryBasicAttack(false);
+		}
+		else
+		{
+			AAIController* MyAIController = Cast<AAIController>(GetController());
+			if (MyAIController) 
+			{
+				MyAIController->MoveToActor(MyEnemyTarget, 5.0f, false, true, false);
+			}
+		}
 	}
 }
 

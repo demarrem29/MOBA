@@ -2,6 +2,7 @@
 
 #include "MOBAPlayerController.h"
 #include "Components/CapsuleComponent.h"
+#include "Animation/AnimInstance.h"
 
 AMOBAPlayerController::AMOBAPlayerController()
 {
@@ -23,15 +24,47 @@ void AMOBAPlayerController::PlayerTick(float DeltaTime)
 	switch (MovementType)
 	{
 	case EMovementType::None: break;
-	case EMovementType::MoveToCursor: MoveToMouseCursor(); 
+	case EMovementType::MoveToCursor: MoveToMouseCursor();
+		AttackCommandActive = false;
+		break;
+	case EMovementType::MoveToFriendlyTarget: MoveToFriendlyTarget();
+		AttackCommandActive = false;
 		break;
 	case EMovementType::MoveToEnemyTarget: MoveToEnemyTarget();
 		break;
-	case EMovementType::MoveToFriendlyTarget: MoveToFriendlyTarget();
+	case EMovementType::MoveToAttackLocation: MoveToAttackLocation(AttackLocation);
+		AttackCommandActive = false;
 		break;
-	case EMovementType::MoveToAttackLocation: MoveToAttackLocation(AttackLocation); 
-		break;
-	default: break;
+	default: AttackCommandActive = false;  break;
+	}
+
+	// Check if we should scroll the camera with our mouse
+	if (!bFollowPlayerCharacter) 
+	{
+		CalculateMouseScroll();
+		MoveCamera();
+	}
+	// No, lock to MyCharacter
+	else 
+	{
+		if (MyCharacter && MyCamera) 
+		{
+			MyCamera->SetActorLocation(MyCharacter->GetActorLocation());
+		}
+	}
+}
+
+void AMOBAPlayerController::BeginPlay()
+{
+	MyCamera = GetPawn();
+	if (!MyCamera)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("UMyClass %s BeginPlay error! No possessed pawn."), *GetNameSafe(this));
+	}
+	CurrentMouseCursor = DefaultMouseCursor;
+	if (MyCharacter && MyCamera) 
+	{
+		MyCamera->SetActorLocation(MyCharacter->GetActorLocation());
 	}
 }
 
@@ -50,7 +83,19 @@ void AMOBAPlayerController::SetupInputComponent()
 	// Default keyboard input "A" to set a new target. Left clicking on the ground does attack move to location.
 	// Left clicking on an enemy starts performing basic attacks on them. Right click to cancel.
 	InputComponent->BindAction("Attack", IE_Pressed, this, &AMOBAPlayerController::Attack);
+	InputComponent->BindAction("ToggleCameraLock", IE_Pressed, this, &AMOBAPlayerController::ToggleCameraLock);
+	InputComponent->BindAction("CenterCamera", IE_Pressed, this, &AMOBAPlayerController::ToggleCameraLock);
+	InputComponent->BindAction("CenterCamera", IE_Released, this, &AMOBAPlayerController::ToggleCameraLock);
+	InputComponent->BindAction("MoveCameraForward", IE_Pressed, this, &AMOBAPlayerController::MoveCameraForward);
+	InputComponent->BindAction("MoveCameraBackward", IE_Pressed, this, &AMOBAPlayerController::MoveCameraBackward);
+	InputComponent->BindAction("MoveCameraLeft", IE_Pressed, this, &AMOBAPlayerController::MoveCameraLeft);
+	InputComponent->BindAction("MoveCameraRight", IE_Pressed, this, &AMOBAPlayerController::MoveCameraRight);
+	InputComponent->BindAction("MoveCameraForward", IE_Released, this, &AMOBAPlayerController::MoveCameraForwardReleased);
+	InputComponent->BindAction("MoveCameraBackward", IE_Released, this, &AMOBAPlayerController::MoveCameraBackwardReleased);
+	InputComponent->BindAction("MoveCameraLeft", IE_Released, this, &AMOBAPlayerController::MoveCameraLeftReleased);
+	InputComponent->BindAction("MoveCameraRight", IE_Released, this, &AMOBAPlayerController::MoveCameraRightReleased);
 }
+
 
 void AMOBAPlayerController::MoveToMouseCursor()
 {
@@ -62,6 +107,7 @@ void AMOBAPlayerController::MoveToMouseCursor()
 		if (Hit.bBlockingHit)
 		{
 			// We hit something, move there
+			StopMontage();
  			UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, Hit.ImpactPoint);
 		}
 	}
@@ -97,47 +143,65 @@ void AMOBAPlayerController::MoveToAttackLocation(FVector AttackTarget)
 						minimumdistance = currentdistance;
 						MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(OverlappedActor);
 					}
-					MovementType = EMovementType::MoveToEnemyTarget;
 				}
+			}
+			if (MyCharacter->MyEnemyTarget)
+			{
+				MyCharacter->bIsAttacking = true;
+				MovementType = EMovementType::MoveToEnemyTarget;
 			}
 		}
 		else
 		{
+			StopMontage();
 			MyAIController->MoveToLocation(AttackTarget, 10.0f, true, true, false, false, 0, true);
 		}
 	}
-	else MovementType = EMovementType::None;
+	else 
+	{
+		MovementType = EMovementType::None;
+	}
 }
 
 void AMOBAPlayerController::MoveToFriendlyTarget() 
 {
 	if (MyCharacter->MyFollowTarget && MyAIController) 
 	{
+		StopMontage();
 		MyAIController->MoveToLocation(MyCharacter->MyFollowTarget->GetActorLocation(), 5.0f, false, true, false, false, 0, true);
 	}
 	// If we don't have a target, nothing to move to. Stop calling this function.
-	else MovementType = EMovementType::None;
+	else 
+	{
+		MovementType = EMovementType::None;
+		AttackCommandActive = false;
+	}
 }
 
 void AMOBAPlayerController::MoveToEnemyTarget() 
 {
 	if (MyCharacter->MyEnemyTarget && MyAIController) 
 	{
-		// Move to the target if out of range
-		if (!MyCharacter->RangeDetector->IsOverlappingActor(MyCharacter->MyEnemyTarget))
+		if (!AttackCommandActive) 
 		{
-			MyAIController->MoveToLocation(MyCharacter->MyEnemyTarget->GetActorLocation(), MyCharacter->AttributeSet->AttackRange.GetCurrentValue(), true, true, false, false, 0, true);
-		}
-		// We're in range, try to attack
-		else 
-		{
-			MyAIController->StopMovement();
-			MyCharacter->bIsAttacking = true;
 			MyCharacter->TryBasicAttack();
+			AttackCommandActive = true;
 		}
 	}
 	// If we don't have a target, nothing to move to. Stop calling this function.
-	else MovementType = EMovementType::None;
+	else 
+	{
+		MovementType = EMovementType::None;
+	}
+}
+
+void AMOBAPlayerController::StopMontage() 
+{
+	if (MyCharacter) 
+	{
+		UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
+		MyCharacter->StopAnimMontage(currentmontage);
+	}
 }
 
 void AMOBAPlayerController::OnRightClickPressed()
@@ -173,8 +237,7 @@ void AMOBAPlayerController::OnRightClickPressed()
 					MyCharacter->bIsAttacking = true;
 					MyCharacter->MyEnemyTarget = HitCharacter;
 					MyCharacter->MyFollowTarget = NULL;
-					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
-					MyCharacter->StopAnimMontage(currentmontage);
+					StopMontage();
 					MovementType = EMovementType::MoveToEnemyTarget;
 					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 				}
@@ -184,8 +247,7 @@ void AMOBAPlayerController::OnRightClickPressed()
 					MyCharacter->bIsAttacking = false;
 					MyCharacter->MyEnemyTarget = NULL;
 					MyCharacter->MyFollowTarget = HitCharacter;
-					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
-					MyCharacter->StopAnimMontage(currentmontage);
+					StopMontage();
 					MovementType = EMovementType::MoveToFriendlyTarget;
 				}
 				// Change rotation to look at target. Only use yaw.
@@ -205,10 +267,10 @@ void AMOBAPlayerController::OnRightClickPressed()
 					// No target, turn off auto-attacks.
 					MyCharacter->bIsAttacking = false;
 					MyCharacter->MyEnemyTarget = NULL;
+					MyCharacter->MyFollowTarget = NULL;
 					MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 					// set flag to keep updating destination until released
-					UAnimMontage* currentmontage = MyCharacter->GetCurrentMontage();
-					MyCharacter->StopAnimMontage(currentmontage);
+					StopMontage();
 					MovementType = EMovementType::MoveToCursor;
 				}
 			}
@@ -232,12 +294,25 @@ void AMOBAPlayerController::OnLeftClickPressed()
 	GetHitResultUnderCursor(ECC_Pawn, false, HitResult);
 	if (bAttackPending)
 	{
-		if (Cast<AMOBACharacter>(HitResult.GetActor())) 
+		AMOBACharacter* HitCharacter = Cast<AMOBACharacter>(HitResult.GetActor());
+		if (HitCharacter) 
 		{
-			if (MyCharacter->IsHostile(Cast<AMOBACharacter>(HitResult.GetActor()))) 
+			if (MyCharacter->IsHostile(HitCharacter))
 			{
-				MyCharacter->MyEnemyTarget = Cast<AMOBACharacter>(HitResult.GetActor());
+				MyCharacter->bIsAttacking = true;
+				MyCharacter->MyEnemyTarget = HitCharacter;
+				MyCharacter->MyFocusTarget = HitCharacter;
+				MyCharacter->MyFollowTarget = NULL;
 				MovementType = EMovementType::MoveToEnemyTarget;
+			}
+			else 
+			{
+				MyCharacter->MyFollowTarget = HitCharacter;
+				MyCharacter->MyFocusTarget = HitCharacter;
+				MyCharacter->MyEnemyTarget = NULL;
+				MyCharacter->bIsAttacking = false;
+				MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
+				MovementType = EMovementType::MoveToFriendlyTarget;
 			}
 		}
 		else
@@ -254,6 +329,10 @@ void AMOBAPlayerController::OnLeftClickPressed()
 		{
 			MyCharacter->MyFocusTarget = Cast<AMOBACharacter>(HitResult.GetActor());
 		}
+		else 
+		{
+			MyCharacter->MyFocusTarget = NULL;
+		}
 	}
 }
 
@@ -262,17 +341,60 @@ void AMOBAPlayerController::OnLeftClickReleased()
 	
 }
 
+// Mouse Camera Control when camera is not locked
+void AMOBAPlayerController::CalculateMouseScroll() 
+{
+	float X;
+	float Y;
+	int32 SizeX;
+	int32 SizeY;
+	GetMousePosition(X, Y);
+	GetViewportSize(SizeX, SizeY);
+	if (X >= (SizeX * 0.9f)) 
+	{
+		MouseY = 1.0f;
+	}
+	else if (X <= (SizeX * 0.1f) && X > 0.0f && Y > 0.0f && Y < SizeY) 
+	{
+		MouseY = -1.0f;
+	}
+	else MouseY = 0.0f;
+	if (Y >= (SizeY * 0.9f)) 
+	{
+		MouseX = -1.0f;
+	}
+	else if (Y <= (SizeY * 0.1f) && Y > 0.0f && X > 0.0f && X < SizeX)
+	{
+		MouseX = 1.0f;
+	}
+	else MouseX = 0.0f;
+}
+// Move Camera when not locked
+void AMOBAPlayerController::MoveCamera() 
+{
+	if (MyCamera) 
+	{
+		float x = (MouseX * MouseScrollSpeed) + ((CameraForward + CameraBackward) * KeyboardScrollSpeed);
+		float y = (MouseY * MouseScrollSpeed) + ((CameraLeft + CameraRight) * KeyboardScrollSpeed);
+		FVector movement = FVector{x, y, 0.0f};
+		MyCamera->AddMovementInput(movement);
+	}
+}
+
 // Event handler for user pressing the "Stop" input action
 void AMOBAPlayerController::Stop() 
 {
 	FVector location;
 	if (MyCharacter) 
 	{
-		location = MyCharacter->GetActorLocation();
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(MyAIController, location);
+		if (MyAIController) 
+		{
+			MyAIController->StopMovement();
+		}
 		MyCharacter->bIsAttacking = false;
 		MyCharacter->MyEnemyTarget = NULL;
 		MyCharacter->MyFollowTarget = NULL;
+		AttackCommandActive = false;
 		MyCharacter->CombatStatusChangeDelegate.Broadcast(MyCharacter->bIsAttacking, MyCharacter->bIsInCombat);
 	}
 	// clear flag to indicate we should stop updating the destination
@@ -289,12 +411,42 @@ void AMOBAPlayerController::Attack()
 	}
 }
 
-void AMOBAPlayerController::BeginPlay() 
+// Toggle whether the camera follows the pawn or not
+void AMOBAPlayerController::ToggleCameraLock() 
 {
-	MyPawn = GetPawn();
-	if (!MyPawn) 
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("UMyClass %s BeginPlay error! No possessed pawn."), *GetNameSafe(this));
-	}
-	CurrentMouseCursor = DefaultMouseCursor;
+	bFollowPlayerCharacter = bFollowPlayerCharacter ? false : true;
+}
+
+// Keyboard camera control when camera is not locked
+void AMOBAPlayerController::MoveCameraForward() 
+{
+	CameraForward = 1.0f;
+}
+void AMOBAPlayerController::MoveCameraForwardReleased() 
+{
+	CameraForward = 0.0f;
+}
+void AMOBAPlayerController::MoveCameraBackward() 
+{
+	CameraBackward = -1.0f;
+}
+void AMOBAPlayerController::MoveCameraBackwardReleased() 
+{
+	CameraBackward = 0.0f;
+}
+void AMOBAPlayerController::MoveCameraLeft() 
+{
+	CameraLeft = -1.0f;
+}
+void AMOBAPlayerController::MoveCameraLeftReleased() 
+{
+	CameraLeft = 0.0f;
+}
+void AMOBAPlayerController::MoveCameraRight() 
+{
+	CameraRight = 1.0f;
+}
+void AMOBAPlayerController::MoveCameraRightReleased() 
+{
+	CameraRight = 0.0f;
 }

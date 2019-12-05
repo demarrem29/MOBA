@@ -9,6 +9,7 @@
 #include "GameplayAbilitySpec.h"
 #include "Components/SphereComponent.h"
 #include "EquipmentComponent.h"
+#include "Animation/AnimMontage.h"
 #include "MOBACharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCombatStatusChange, bool, bIsAttacking, bool, bIsInCombat);
@@ -20,6 +21,7 @@ enum class ETeam : uint8
 	TopSide			UMETA(DisplayName = "Top Side"),
 	NeutralHostile	UMETA(DisplayName = "Jungle Camps"),
 	NeutralFriendly UMETA(DisplayName = "Shop Vendors"),
+
 };
 
 UENUM(BlueprintType)
@@ -59,11 +61,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 		ETeam MyTeam;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
+		int32 PlayerIndex;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 		bool bIsAttacking;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 		bool bIsInCombat;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		int32 ComboIndex = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		bool bUseOffHandWeapon = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		TArray<UAnimMontage*> BasicAttackAnimations;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		bool bUseProjectile;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		TSubclassOf<AProjectile> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BasicAttack")
+		FName ProjectileSpawnSocket;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyEnemyTarget;
@@ -73,9 +96,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 		AMOBACharacter* MyFocusTarget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		USphereComponent* RangeDetector;
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 		bool IsHostile(AMOBACharacter* TargetCharacter);
@@ -94,6 +114,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 		float GetBasicAttackCooldown();
 
+	UFUNCTION(BlueprintCallable, Category = "Equipment")
+		bool GetOffHandWeaponEquipped();
+
 	FTimerHandle CombatTimerHandle;	
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -102,9 +125,15 @@ public:
 
 	// Event Handlers for receiving attribute set delegate broadcasts
 	UFUNCTION()
+		void InventoryChange();
+	UFUNCTION()
+		void EquipmentChange();
+	UFUNCTION()
 		void HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION()
 		void HealthRegenChange(FGameplayAttributeData HealthRegen);
+	UFUNCTION()
+		void HealingModifierChange(FGameplayAttributeData HealingModifier);
 	UFUNCTION()
 		void ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
 	UFUNCTION()
@@ -118,17 +147,15 @@ public:
 	UFUNCTION()
 		void SpellPowerChange(FGameplayAttributeData SpellPower);
 	UFUNCTION()
-		void MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed);
+		void MainHandChange(FGameplayAttributeData MainHandAttackSpeed, FGameplayAttributeData MainHandMinDamage, FGameplayAttributeData MainHandMaxDamage, FGameplayAttributeData MainHandAttackRange);
 	UFUNCTION()
-		void OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed);
+		void OffHandChange(FGameplayAttributeData OffHandAttackSpeed, FGameplayAttributeData OffHandMinDamage, FGameplayAttributeData OffHandMaxDamage, FGameplayAttributeData OffHandAttackRange);
 	UFUNCTION()
 		void BonusAttackSpeedChange(FGameplayAttributeData BonusttackSpeed);
 	UFUNCTION()
 		void CriticalChanceChange(FGameplayAttributeData CriticalChance);
 	UFUNCTION()
 		void CriticalDamageChange(FGameplayAttributeData CriticalDamage);
-	UFUNCTION()
-		void AttackRangeChange(FGameplayAttributeData AttackRange);
 	UFUNCTION()
 		void ArmorChange(FGameplayAttributeData Armor);
 	UFUNCTION()
@@ -152,9 +179,15 @@ public:
 
 	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)
+		void BP_InventoryChange();
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_EquipmentChange();
+	UFUNCTION(BlueprintImplementableEvent)
 		void BP_HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_HealthRegenChange(FGameplayAttributeData HealthRegen);
+	UFUNCTION(BlueprintImplementableEvent)
+		void BP_HealingModifierChange(FGameplayAttributeData HealingModifier);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_ManaChange(FGameplayAttributeData mana, FGameplayAttributeData maxmana);
 	UFUNCTION(BlueprintImplementableEvent)
@@ -168,17 +201,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_SpellPowerChange(FGameplayAttributeData SpellPower);
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_MainHandAttackSpeedChange(FGameplayAttributeData MainHandAttackSpeed);
+		void BP_MainHandChange(FGameplayAttributeData MainHandAttackSpeed, FGameplayAttributeData MainHandMinDamage, FGameplayAttributeData MainHandMaxDamage, FGameplayAttributeData MainHandAttackRange);
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_OffHandAttackSpeedChange(FGameplayAttributeData OffHandAttackSpeed);
+		void BP_OffHandChange(FGameplayAttributeData OffHandAttackSpeed, FGameplayAttributeData OffHandMinDamage, FGameplayAttributeData OffHandMaxDamage, FGameplayAttributeData OffHandAttackRange);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_BonusAttackSpeedChange(FGameplayAttributeData BonusAttackSpeed);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_CriticalChanceChange(FGameplayAttributeData CriticalChance);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_CriticalDamageChange(FGameplayAttributeData CriticalDamage);
-	UFUNCTION(BlueprintImplementableEvent)
-		void BP_AttackRangeChange(FGameplayAttributeData AttackRange);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_ArmorChange(FGameplayAttributeData Armor);
 	UFUNCTION(BlueprintImplementableEvent)
@@ -198,7 +229,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGameplayEffect);
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_TryBasicAttack();
+		void BP_TryBasicAttack(bool UseOffHand);
 	
 	FCombatStatusChange CombatStatusChangeDelegate;
 

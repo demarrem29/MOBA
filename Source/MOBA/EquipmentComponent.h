@@ -7,8 +7,12 @@
 #include "GameplayAbilities/Public/Abilities/GameplayAbility.h"
 #include "GameplayAbilities/Public/GameplayEffect.h"
 #include "Image.h"
+#include "UObject/Class.h"
+#include "Projectile.h"
 #include "EquipmentComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChange);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEquipmentChange);
 
 class AMOBACharacter;
 // Enum defining types of items
@@ -30,12 +34,24 @@ enum class EItemType : uint8
 UENUM(BlueprintType)
 enum class ESlotType : uint8
 {
-	Consumable UMETA(DisplayName = "ConsumableSlot"),
 	Armor UMETA(DisplayName = "ArmorSlot"),
 	BrainImplant UMETA(DisplayName = "BrainImplantSlot"),
 	BodyImplant UMETA(DisplayName = "BodyImplantSlot"),
 	MainHand UMETA(DisplayName = "MainHandSlot"),
 	OffHand UMETA(DisplayName = "OffHandSlot"),
+};
+
+// Enum defining messages from equipping items
+UENUM(BlueprintType)
+enum class EInventoryMessage : uint8
+{
+	Success UMETA(DisplayName = "Success"),
+	InventoryFull UMETA(DisplayName = "InventoryFull"),
+	Unique UMETA(DisplayName = "Unique"),
+	DoesNotExist UMETA(DisplayName = "DoesNotExist"),
+	ModuleSlotsFull UMETA(DisplayName = "ModuleSlotsFull"),
+	WrongSlot UMETA(DisplayName = "WrongEquipmentSlot"),
+	InvalidEquipment UMETA(DisplayName = "InvalidEquipment"),
 };
 
 // Base characteristics that all items have
@@ -46,45 +62,79 @@ class UItem : public UObject
 	
 	
 protected:
-	UItem();
-
+	// Character that owns this item
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemProperties")
-	AMOBACharacter* MyOwner;
+	AMOBACharacter* MyOwner; 
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
 	EItemType ItemType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	FName ItemName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	UTexture2D* IconImageSource;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemProperties")
-	UImage* IconImage;
+	// How many items currently occupy one inventory slot
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "InventoryProperties")
+	int32 CurrentStacks; 
+	
+	// How many items can occupy one inventory slot
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InventoryProperties")
+	int32 MaxStacks; 
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemProperties")
-	int32 NumModuleSlots;
+	// More than one allowed per inventory?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InventoryProperties")
+	bool bUniqueOwned; 
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Abilities")
-	TArray<TSubclassOf<class UGameplayAbility>> GrantedAbilities;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Effects")
-	TArray<TSubclassOf<class UGameplayEffect>> GrantedEffects;
+	
 public:
-	bool Equip(AMOBACharacter* Owner);
-
-	bool UnEquip();
-
+	FORCEINLINE void SetOwner(AMOBACharacter* NewOwner) { MyOwner = NewOwner; }
 	FORCEINLINE AMOBACharacter* GetOwner() { return MyOwner; }
 	FORCEINLINE EItemType GetItemType() { return ItemType; }
 	FORCEINLINE FName GetItemName() { return ItemName; }
-	FORCEINLINE int32 GetNumSlots() { return NumModuleSlots; }
+	FORCEINLINE bool GetUniqueOwned() { return bUniqueOwned; }
+	void SetCurrentStacks(int32 NewStackCount);
+	FORCEINLINE int32 GetCurrentStacks() { return CurrentStacks; }
+	FORCEINLINE int32 GetMaxStacks() { return MaxStacks; }
+};
+
+UCLASS(Blueprintable, BlueprintType)
+class UEquipment : public UItem
+{
+	GENERATED_BODY()
+protected:	
+	// Only one allowed per character?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EquipmentProperties")
+		bool bUniqueEquipped; 
+
+	// Only one allowed per item?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Modules")
+		bool bModuleUniqueEquipped; 
+
+	// How many modules are allowed to be equipped
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Modules")
+		int32 MaxModuleSlots; 
+
+	// Array of currently equipped modules
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Modules")
+		TArray<UEquipment*> EquippedModules;
+
+	// Abilities and/or stats granted by the equipped item. Effect and effect level
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Effects")
+		TMap<TSubclassOf<class UGameplayEffect>, float> GrantedEffects;
+
+public:
+	FORCEINLINE bool GetUniqueEquipped() { return bUniqueEquipped; }
+	FORCEINLINE bool GetModuleUniqueEquipped() { return bModuleUniqueEquipped; }
+	FORCEINLINE int32 GetMaxSlots() { return MaxModuleSlots; }
+	FORCEINLINE TArray<UEquipment*> GetEquippedModules() { return EquippedModules; }
+	FORCEINLINE TMap<TSubclassOf<class UGameplayEffect>, float> GetGrantedEffects() { return GrantedEffects; }
 };
 
 // Weapon-specific characteristics like damage, attack speed, etc.
 UCLASS(Blueprintable, BlueprintType)
-class UWeapon : public UItem 
+class UWeapon : public UEquipment 
 {
 	GENERATED_BODY()
 protected:
@@ -111,6 +161,8 @@ public:
 	FORCEINLINE int32 GetMaxDamage() { return MaxDamage; }
 	FORCEINLINE float GetAttackSpeed() { return AttackSpeed; }
 	FORCEINLINE float GetAttackRange() { return AttackRange; }
+	FORCEINLINE bool GetUseProjectile() { return bUseProjectile; }
+	FORCEINLINE UClass* GetProjectileClass() { return Cast<UClass>(ProjectileClass); }
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -123,10 +175,37 @@ public:
 	UEquipmentComponent();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	TArray<TSubclassOf<UItem>> Inventory;
+	TArray<UItem*> Inventory; // Items the character currently owns
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TArray<UItem*> RemovedInventory; // Probably will move this to an independent shop later
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	int32 MaxInventorySize;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EquipmentSlots")
-	TMap<ESlotType, TSubclassOf<UItem>> EquipmentSlots;
+	TMap<ESlotType, UEquipment*> EquipmentSlots;
+
+	UFUNCTION(BlueprintCallable)
+	EInventoryMessage AddItemToInventory(TSubclassOf<class UItem> ItemClass, UItem* ExistingItem = NULL, int32 Quantity = 1);
+
+	UFUNCTION(BlueprintCallable)
+	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 Quantity = 1);
+
+	UFUNCTION(BlueprintCallable)
+	EInventoryMessage Equip(ESlotType SlotToEquip, UEquipment* ItemToEquip);
+	
+	UFUNCTION(BlueprintCallable)
+	EInventoryMessage UnEquip(ESlotType SlotToUnequip);
+
+// Helper Inventory functions, not to be called directly
+private:
+	UFUNCTION()
+		bool ClassAlreadyPresentInInventory(TSubclassOf<UItem> ItemClass);
+	UFUNCTION()
+		TArray<UItem*> ItemInstancesAlreadyPresentInInventory(TSubclassOf<UItem> ItemClass);
+	UFUNCTION()
+		bool ItemInstanceAlreadyPresentInInventory(UItem* Item);
 
 protected:
 	// Called when the game starts
@@ -134,5 +213,7 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;		
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;	
+	FOnInventoryChange OnInventoryChange;
+	FOnEquipmentChange OnEquipmentChange;
 };

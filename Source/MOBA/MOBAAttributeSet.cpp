@@ -4,10 +4,11 @@
 #include "MOBAAttributeSet.h"
 #include "MOBACharacter.h"
 
-UMOBAAttributeSet::UMOBAAttributeSet() 
+UMOBAAttributeSet::UMOBAAttributeSet()
 	:Health(500.0f)
 	,MaxHealth(500.0f)
 	,HealthRegen(7.0f)
+	,HealingModifier(1.0f)
 	,Mana(300.0f)
 	,MaxMana(300.0f)
 	,ManaRegen(7.3f)
@@ -17,12 +18,17 @@ UMOBAAttributeSet::UMOBAAttributeSet()
 	,MaxExperience(280.0f)
 	,AttackPower(55.0f)
 	,SpellPower(0.0f)
+	,MainHandMinDamage(1.0f)
+	,MainHandMaxDamage(4.0f)
 	,MainHandAttackSpeed(0.7f)
+	,MainHandAttackRange(150.f)
+	,OffHandMinDamage(0.0f)
+	,OffHandMaxDamage(0.0f)
 	,OffHandAttackSpeed(0.0f)
+	,OffHandAttackRange(0.0f)
 	,BonusAttackSpeed(0.0f)
 	,CriticalChance(0.1f)
 	,CriticalDamage(2.0f)
-	,AttackRange(150.0f)
 	,Armor(0.0f)
 	,PhysicalDamageReduction(0.0f)
 	,EnvironmentalResistance(0.0f)
@@ -51,6 +57,55 @@ float UMOBAAttributeSet::CalculateDamageReduction(float ResistanceStat)
 		damagereduction = 1 - (2 - (100 / (100 - ResistanceStat)));
 	}
 	return damagereduction;
+}
+
+void UMOBAAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) 
+{
+	
+	if (Attribute == HealthAttribute()) 
+	{
+		Health = FMath::Clamp(NewValue, 0.0f, MaxHealth.GetCurrentValue());
+		HealthChange.Broadcast(Health, MaxHealth);
+	}
+	if (Attribute == MaxHealthAttribute())
+	{
+		MaxHealth = FMath::Clamp(NewValue, 1.0f, 2147483647.0f);
+		HealthChange.Broadcast(Health, MaxHealth);
+	}
+	if (Attribute == ArmorAttribute()) 
+	{
+		ArmorChange.Broadcast(NewValue);
+	}
+	if (Attribute == HealthRegenAttribute()) 
+	{
+		HealthRegen = FMath::Clamp(NewValue, 0.0f, 5000.0f);
+		HealthRegenChange.Broadcast(HealthRegen);
+	}
+	/*
+	FGameplayAttribute HealingModifierAttribute();
+	FGameplayAttribute ManaAttribute();
+	FGameplayAttribute ManaRegenAttribute();
+	FGameplayAttribute LevelAttribute();
+	FGameplayAttribute ExperienceAttribute();
+	FGameplayAttribute AttackPowerAttribute();
+	FGameplayAttribute SpellPowerAttribute();
+	FGameplayAttribute MainHandAttackSpeedAttribute();
+	FGameplayAttribute OffHandAttackSpeedAttribute();
+	FGameplayAttribute BonusAttackSpeedAttribute();
+	FGameplayAttribute MainHandMinDamageAttribute();
+	FGameplayAttribute MainHandMaxDamageAttribute();
+	FGameplayAttribute OffHandMinDamageAttribute();
+	FGameplayAttribute OffHandMaxDamageAttribute();
+	FGameplayAttribute CriticalChanceAttribute();
+	FGameplayAttribute CriticalDamageAttribute();
+	FGameplayAttribute MainHandAttackRangeAttribute();
+	FGameplayAttribute OffHandAttackRangeAttribute();
+	FGameplayAttribute PhysicalDamageReductionAttribute();
+	FGameplayAttribute EnvironmentalResistanceAttribute();
+	FGameplayAttribute EnvironmentalDamageReductionAttribute();
+	FGameplayAttribute FlatDamageReductionAttribute();
+	FGameplayAttribute MovementSpeedAttribute();
+	*/
 }
 
 void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
@@ -117,10 +172,20 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 		}
 		HealthChange.Broadcast(Health, MaxHealth);
 	}
+	if (MaxHealthAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MaxHealth = FMath::Clamp(MaxHealth.GetCurrentValue(), 1.0f, 2147483647.0f);
+		HealthChange.Broadcast(Health, MaxHealth);
+	}
 	if (HealthRegenAttribute() == Data.EvaluatedData.Attribute) 
 	{
-		HealthRegen = FMath::Clamp(HealthRegen.GetCurrentValue(), 0.0f, 9999.0f);
+		HealthRegen = FMath::Clamp(HealthRegen.GetCurrentValue(), 0.0f, 5000.0f);
 		HealthRegenChange.Broadcast(HealthRegen);
+	}
+	if (HealingModifierAttribute() == Data.EvaluatedData.Attribute)
+	{
+		HealingModifier = FMath::Clamp(HealingModifier.GetCurrentValue(), 0.0f, 10.0f);
+		HealingModifierChange.Broadcast(HealingModifier);
 	}
 	if (ManaAttribute() == Data.EvaluatedData.Attribute)
 	{
@@ -129,7 +194,7 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 	}
 	if (ManaRegenAttribute() == Data.EvaluatedData.Attribute)
 	{
-		ManaRegen = FMath::Clamp(ManaRegen.GetCurrentValue(), 0.0f, 9999.0f);
+		ManaRegen = FMath::Clamp(ManaRegen.GetCurrentValue(), 0.0f, 5000.0f);
 		ManaRegenChange.Broadcast(ManaRegen);
 	}
 	if (LevelAttribute() == Data.EvaluatedData.Attribute) 
@@ -151,7 +216,7 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 			{
 				if (Experience.GetCurrentValue() >= XPToLvl->Experience) // Check if we have enough experience for a level up
 				{
-					Experience = 0;
+					Experience = Experience.GetCurrentValue() - XPToLvl->Experience;
 					Level = (Level.GetCurrentValue() + 1);
 					LevelChange.Broadcast(Level, MaxLevel);
 					currentlevelstring = FString::FromInt(static_cast<int32>(Level.GetCurrentValue()));	// Get current level as a string
@@ -173,6 +238,38 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 		SpellPower = FMath::Clamp(SpellPower.GetCurrentValue(), 0.0f, 2000.0f);
 		SpellPowerChange.Broadcast(SpellPower);
 	}
+	if (MainHandMinDamageAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MainHandMinDamage = FMath::Clamp(MainHandMinDamage.GetCurrentValue(), 1.0f, 1000.0f);
+	}
+	if (OffHandMinDamageAttribute() == Data.EvaluatedData.Attribute)
+	{
+		OffHandMinDamage = FMath::Clamp(OffHandMinDamage.GetCurrentValue(), 1.0f, 1000.0f);
+	}
+	if (MainHandMaxDamageAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MainHandMaxDamage = FMath::Clamp(MainHandMaxDamage.GetCurrentValue(), 1.0f, 1000.0f);
+	}
+	if (OffHandMaxDamageAttribute() == Data.EvaluatedData.Attribute)
+	{
+		OffHandMaxDamage = FMath::Clamp(OffHandMaxDamage.GetCurrentValue(), 1.0f, 1000.0f);
+	}
+	if (MainHandAttackRangeAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MainHandAttackRange = FMath::Clamp(MainHandAttackRange.GetCurrentValue(), 150.0f, 1000.0f);
+	}
+	if (OffHandAttackRangeAttribute() == Data.EvaluatedData.Attribute)
+	{
+		OffHandAttackRange = FMath::Clamp(OffHandAttackRange.GetCurrentValue(), 150.0f, 1000.0f);
+	}
+	if (MainHandAttackSpeedAttribute() == Data.EvaluatedData.Attribute)
+	{
+		MainHandAttackSpeed = FMath::Clamp(MainHandAttackSpeed.GetCurrentValue(), 0.0f, 2.5f);
+	}
+	if (OffHandAttackSpeedAttribute() == Data.EvaluatedData.Attribute)
+	{
+		OffHandAttackSpeed = FMath::Clamp(OffHandAttackSpeed.GetCurrentValue(), 0.0f, 2.5f);
+	}
 	if (BonusAttackSpeedAttribute() == Data.EvaluatedData.Attribute)
 	{
 		BonusAttackSpeed = FMath::Clamp(BonusAttackSpeed.GetCurrentValue(), 0.0f, 1000.0f);
@@ -185,39 +282,35 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 	}
 	if (CriticalDamageAttribute() == Data.EvaluatedData.Attribute)
 	{
+		CriticalDamage = FMath::Clamp(CriticalDamage.GetCurrentValue(), 0.0f, 10.0f);
 		CriticalDamageChange.Broadcast(CriticalDamage);
-	}
-	if (AttackRangeAttribute() == Data.EvaluatedData.Attribute)
-	{
-		AttackRange = FMath::Clamp(AttackRange.GetCurrentValue(), 0.0f, 800.0f);
-		AttackRangeChange.Broadcast(AttackRange);
 	}
 	if (ArmorAttribute() == Data.EvaluatedData.Attribute)
 	{
 		ArmorChange.Broadcast(Armor);
-		PhysicalDamageReduction = CalculateDamageReduction(Armor.GetCurrentValue());
-		PhysicalDamageReductionChange.Broadcast(PhysicalDamageReduction);
 	}
 	if (PhysicalDamageReductionAttribute() == Data.EvaluatedData.Attribute) 
 	{
+		PhysicalDamageReduction = FMath::Clamp(PhysicalDamageReduction.GetCurrentValue(), -1.0f, 1.0f);
 		PhysicalDamageReductionChange.Broadcast(PhysicalDamageReduction);
 	}
 	if (EnvironmentalResistanceAttribute() == Data.EvaluatedData.Attribute)
 	{
 		EnvironmentalResistanceChange.Broadcast(EnvironmentalResistance);
-		EnvironmentalDamageReduction = CalculateDamageReduction(EnvironmentalResistance.GetCurrentValue());
-		EnvironmentalDamageReductionChange.Broadcast(EnvironmentalDamageReduction);
 	}
 	if (EnvironmentalDamageReductionAttribute() == Data.EvaluatedData.Attribute)
 	{
+		EnvironmentalDamageReduction = FMath::Clamp(EnvironmentalDamageReduction.GetCurrentValue(), -1.0f, 1.0f);
 		EnvironmentalDamageReductionChange.Broadcast(EnvironmentalDamageReduction);
 	}
 	if (FlatDamageReductionAttribute() == Data.EvaluatedData.Attribute)
 	{
+		FlatDamageReduction = FMath::Clamp(FlatDamageReduction.GetCurrentValue(), -1.0f, 1.0f);
 		FlatDamageReductionChange.Broadcast(FlatDamageReduction);
 	}
 	if (MovementSpeedAttribute() == Data.EvaluatedData.Attribute)
 	{
+		MovementSpeed = FMath::Clamp(MovementSpeed.GetCurrentValue(), 0.0f, 1000.0f);
 		MovementSpeedChange.Broadcast(MovementSpeed);
 	}
 }
@@ -228,9 +321,22 @@ FGameplayAttribute UMOBAAttributeSet::HealthAttribute()
 	return FGameplayAttribute(Property);
 }
 
+FGameplayAttribute UMOBAAttributeSet::MaxHealthAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MaxHealth));
+	return FGameplayAttribute(Property);
+}
+
+
 FGameplayAttribute UMOBAAttributeSet::HealthRegenAttribute()
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealthRegen));
+	return FGameplayAttribute(Property);
+}
+
+FGameplayAttribute UMOBAAttributeSet::HealingModifierAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealingModifier));
 	return FGameplayAttribute(Property);
 }
 
@@ -283,6 +389,36 @@ FGameplayAttribute UMOBAAttributeSet::BonusAttackSpeedAttribute()
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, BonusAttackSpeed));
 	return FGameplayAttribute(Property);
 }
+FGameplayAttribute UMOBAAttributeSet::MainHandMinDamageAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMinDamage));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::MainHandMaxDamageAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMaxDamage));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::MainHandAttackRangeAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackRange));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::OffHandMinDamageAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMinDamage));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::OffHandMaxDamageAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMaxDamage));
+	return FGameplayAttribute(Property);
+}
+FGameplayAttribute UMOBAAttributeSet::OffHandAttackRangeAttribute()
+{
+	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackRange));
+	return FGameplayAttribute(Property);
+}
 FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute() 
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalChance));
@@ -291,12 +427,6 @@ FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute()
 FGameplayAttribute UMOBAAttributeSet::CriticalDamageAttribute() 
 {
 	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalDamage));
-	return FGameplayAttribute(Property);
-}
-
-FGameplayAttribute UMOBAAttributeSet::AttackRangeAttribute()
-{
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackRange));
 	return FGameplayAttribute(Property);
 }
 

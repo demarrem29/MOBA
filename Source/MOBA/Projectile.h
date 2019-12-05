@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "Components/SphereComponent.h"
-#include "MOBACharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Projectile.generated.h"
 
@@ -32,7 +31,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
-		AMOBACharacter* MyEnemyTarget;
+		ACharacter* MyEnemyTarget;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Targeting")
 		bool bIsInitialized = false;
@@ -58,10 +57,10 @@ public:
 		UProjectileMovementComponent* ProjectileMovementComponent;
 
 	UFUNCTION(BlueprintImplementableEvent)
-		void OnTargetReached(AMOBACharacter* InTarget);
+		void OnTargetReached(ACharacter* InTarget);
 	
 	UFUNCTION(BlueprintCallable)
-		void InitializeProjectile(bool IsSingleTarget, AMOBACharacter* CharacterTarget = NULL, FVector Direction = FVector(0,0,0), float InMaxDistance = 0.0f);
+		void InitializeProjectile(bool IsSingleTarget, ACharacter* CharacterTarget = NULL, FVector Direction = FVector(0,0,0), float InMaxDistance = 0.0f);
 
 	// Handler for when projectile overlaps something
 	UFUNCTION()

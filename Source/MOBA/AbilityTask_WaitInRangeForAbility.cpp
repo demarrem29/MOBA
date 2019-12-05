@@ -11,34 +11,32 @@ UAbilityTask_WaitInRangeForAbility::UAbilityTask_WaitInRangeForAbility(const FOb
 
 void UAbilityTask_WaitInRangeForAbility::OverlapHandle(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) 
 {
-	if (OtherActor)
-	{
-		// Find Source Actor Enemy Target
-		AMOBACharacter* SourceCharacter = Cast<AMOBACharacter>(OverlappedComponent->GetAttachmentRootActor());
-		if (SourceCharacter) 
+	AMOBACharacter* Target = Cast<AMOBACharacter>(OtherActor);
+	// Check if the OtherActor is our Target
+	if (TargetCharacter == Target)
+	{	
+		if (OtherComp == Cast<UPrimitiveComponent>(Target->GetMesh())) 
 		{
-			// Find the Target
-			AMOBACharacter* TargetCharacter = SourceCharacter->MyEnemyTarget;
-			if (TargetCharacter) 
-			{
-				// Check if target matches the overlap event
-				if (OtherActor == TargetCharacter) 
-				{
-					// We found the target, broadcast the delegate and end the task
-					if (ShouldBroadcastAbilityTaskDelegates()) {
-						OnInRange.Broadcast();
-					}
-					EndTask();
-				}
+			AIController->StopMovement();
+			// We found the target, broadcast the delegate and end the task
+			if (ShouldBroadcastAbilityTaskDelegates()) {
+				OnInRange.Broadcast();
 			}
+			EndTask();
 		}
+		
 	}
 }
 
-UAbilityTask_WaitInRangeForAbility* UAbilityTask_WaitInRangeForAbility::WaitInRangeForAbility(UGameplayAbility * OwningAbility, AMOBACharacter* Source, AMOBACharacter* Target)
+UAbilityTask_WaitInRangeForAbility* UAbilityTask_WaitInRangeForAbility::WaitInRangeForTargetedAbility(UGameplayAbility * OwningAbility, AMOBACharacter* Source, AMOBACharacter* Target, USphereComponent* InSphere, FVector InLocation)
 {
 
 	UAbilityTask_WaitInRangeForAbility* MyObj = NewAbilityTask<UAbilityTask_WaitInRangeForAbility>(OwningAbility);
+	MyObj->SourceCharacter = Source;
+	MyObj->TargetCharacter = Target;
+	MyObj->RangeSphere = InSphere;
+	MyObj->AIController = Cast<AAIController>(Source->GetController());
+	if (InLocation != FVector{})	MyObj->TargetLocation = InLocation;
 	return MyObj;
 }
 
@@ -49,10 +47,23 @@ void UAbilityTask_WaitInRangeForAbility::InitSimulatedTask(UGameplayTasksCompone
 
 void UAbilityTask_WaitInRangeForAbility::Activate()
 {
-	USphereComponent* RangeSphere = GetComponent();
+	AAIController* AIController;
 	if (RangeSphere)
 	{
 		RangeSphere->OnComponentBeginOverlap.AddDynamic(this, &UAbilityTask_WaitInRangeForAbility::OverlapHandle);
+	}
+	AIController = Cast<AAIController>(SourceCharacter->GetController());
+	if (AIController) 
+	{
+		if (TargetCharacter) 
+		{
+			AIController->MoveToActor(TargetCharacter, 2.0f, false, true, false);
+		}
+		else 
+		{
+			if (TargetLocation != FVector{ 0.0f,0.0f,0.0f }) AIController->MoveToLocation(TargetLocation, 2.0f, true, true, false, false);
+		}
+		
 	}
 	SetWaitingOnAvatar();
 }
@@ -60,30 +71,14 @@ void UAbilityTask_WaitInRangeForAbility::Activate()
 void UAbilityTask_WaitInRangeForAbility::OnDestroy(bool AbilityIsEnding)
 {
 	Super::OnDestroy(AbilityIsEnding);
-	USphereComponent* RangeSphere = GetComponent();
 	if (RangeSphere)
 	{
 		RangeSphere->OnComponentBeginOverlap.RemoveDynamic(this, &UAbilityTask_WaitInRangeForAbility::OverlapHandle);
 	}
+	ClearWaitingOnAvatar();
 }
 
 FString UAbilityTask_WaitInRangeForAbility::GetDebugString() const
 {
 	return FString::Printf(TEXT("InRangeForAbility"));
-}
-
-USphereComponent* UAbilityTask_WaitInRangeForAbility::GetComponent() 
-{
-	USphereComponent* SphereComponent = nullptr;
-	AActor* ActorOwner = GetAvatarActor();
-	if (ActorOwner)
-	{
-		SphereComponent = Cast<USphereComponent>(ActorOwner->FindComponentByClass<USphereComponent>());
-		if (!SphereComponent)
-		{
-			return nullptr;
-		}
-		else return SphereComponent;
-	}
-	else return nullptr;
 }
