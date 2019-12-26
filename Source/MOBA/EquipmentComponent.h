@@ -186,7 +186,7 @@ public:
 	TMap<ESlotType, UEquipment*> EquipmentSlots;
 
 	UFUNCTION(BlueprintCallable)
-	EInventoryMessage AddItemToInventory(TSubclassOf<class UItem> ItemClass, UItem* ExistingItem = NULL, int32 Quantity = 1);
+	void AddItemToInventory(TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* ExistingItem = NULL, const int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable)
 	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 Quantity = 1);

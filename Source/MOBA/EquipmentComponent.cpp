@@ -45,10 +45,9 @@ void UEquipmentComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
-// Function to add an item to inventory. ExistingItem is an optional parameter
-EInventoryMessage UEquipmentComponent::AddItemToInventory(TSubclassOf<UItem> ItemClass, UItem* ExistingItem, int32 Quantity)
+// Function to add an item to inventory. ExistingItem is an optional parameter. WARNING: ReturnedItem may be NULL.
+void UEquipmentComponent::AddItemToInventory(TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* ExistingItem, const int32 Quantity)
 {
-	
 	bool Instanced; 
 	bool AnotherExists;
 	bool Unique;
@@ -59,7 +58,11 @@ EInventoryMessage UEquipmentComponent::AddItemToInventory(TSubclassOf<UItem> Ite
 	int32 InventorySlotsRequired;
 
 	// Verify item class is valid, abort if not
-	if (!Cast<UItem>(ItemClass)) return EInventoryMessage::DoesNotExist;
+	if (!(Cast<UItem>(ItemClass))) 
+	{
+		Message = EInventoryMessage::DoesNotExist;
+		return;
+	}
 	
 	AnotherExists = ClassAlreadyPresentInInventory(ItemClass); // Whether another item of the same class is present in inventory
 	Unique = CastChecked<UItem>(ItemClass)->GetUniqueOwned();			// Multiple of the same item class allowed in inventory?
@@ -67,7 +70,8 @@ EInventoryMessage UEquipmentComponent::AddItemToInventory(TSubclassOf<UItem> Ite
 	// Abort if the item is unique and another is in inventory
 	if (AnotherExists && Unique)
 	{
-		return EInventoryMessage::Unique;
+		Message = EInventoryMessage::Unique;
+		return;
 	}
 
 	InventorySlotsRequired = (Quantity + CastChecked<UItem>(ItemClass)->GetMaxStacks() - 1) / CastChecked<UItem>(ItemClass)->GetMaxStacks(); // How many inventory slots are required
@@ -99,12 +103,20 @@ EInventoryMessage UEquipmentComponent::AddItemToInventory(TSubclassOf<UItem> Ite
 				if (QuantityRemaining <= 0) break;
 			}
 		}
-		if (SlotsUsed > AvailableInventorySlots) return EInventoryMessage::InventoryFull;
+		if (SlotsUsed > AvailableInventorySlots) 
+		{
+			Message = EInventoryMessage::InventoryFull;
+			return;
+		}
 	}
 	else // Item can't stack, each quantity is its own inventory slot
 	{
 		SlotsUsed = Quantity;
-		if (SlotsUsed > AvailableInventorySlots) return EInventoryMessage::InventoryFull;
+		if (SlotsUsed > AvailableInventorySlots) 
+		{
+			Message = EInventoryMessage::InventoryFull;
+			return;
+		}
 	}
 
 	// Ready to actually make inventory changes, reset remaining quantity
@@ -160,7 +172,8 @@ EInventoryMessage UEquipmentComponent::AddItemToInventory(TSubclassOf<UItem> Ite
 		Inventory.Add(Item);
 		if (QuantityRemaining <= 0) break;
 	}
-	return EInventoryMessage::Success;	
+	Message = EInventoryMessage::Success;
+	return;	
 }
 
 // Function to remove an item from inventory. 
