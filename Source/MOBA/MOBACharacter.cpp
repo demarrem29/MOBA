@@ -108,7 +108,7 @@ float AMOBACharacter::GetBasicAttackCooldown()
 	if (AbilitySystemComponent) 
 	{
 		FGameplayTagContainer CooldownContainer;
-		FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Abilities.BasicAttack.Cooldown")));
+		FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Abilities.Basic.BasicAttack.Cooldown")));
 		CooldownContainer.AddTag(CooldownTag);
 		FGameplayEffectQuery MyQuery = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownContainer);
 		if (AbilitySystemComponent->GetActiveEffectsTimeRemaining(MyQuery).Num() > 0) 
@@ -332,7 +332,7 @@ void AMOBACharacter::OnGameplayEffectEnd(const FActiveGameplayEffect& EndedGamep
 	FGameplayTagContainer BasicAttackCooldownTagContainer;
 	FGameplayTagContainer EndedGameplayEffectContainer;
 	FGameplayTag BasicAttackCooldown;
-	BasicAttackCooldown = FGameplayTag::RequestGameplayTag(FName("Abilities.BasicAttack.Cooldown"));
+	BasicAttackCooldown = FGameplayTag::RequestGameplayTag(FName("Abilities.Basic.BasicAttack.Cooldown"));
 	BasicAttackCooldownTagContainer.AddTag(BasicAttackCooldown);
 	EndedGameplayEffect.Spec.GetAllGrantedTags(EndedGameplayEffectContainer);
 	if (EndedGameplayEffectContainer.HasAny(BasicAttackCooldownTagContainer)) 

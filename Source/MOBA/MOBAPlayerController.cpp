@@ -3,6 +3,7 @@
 #include "MOBAPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Animation/AnimInstance.h"
+#include "Engine/LocalPlayer.h"
 
 AMOBAPlayerController::AMOBAPlayerController()
 {
@@ -250,11 +251,6 @@ void AMOBAPlayerController::OnRightClickPressed()
 					StopMontage();
 					MovementType = EMovementType::MoveToFriendlyTarget;
 				}
-				// Change rotation to look at target. Only use yaw.
-				FRotator myrotation = MyCharacter->GetActorRotation();
-				FRotator lookatrotation = UKismetMathLibrary::FindLookAtRotation(MyCharacter->GetActorLocation(), HitCharacter->GetActorLocation());
-				myrotation.SetComponentForAxis(EAxis::Z, lookatrotation.Yaw);
-				MyCharacter->SetActorRotation(myrotation, ETeleportType::None);
 			}
 		}
 		else // Didn't find a pawn target, so move to location instead

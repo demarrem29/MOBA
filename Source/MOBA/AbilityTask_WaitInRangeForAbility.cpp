@@ -47,7 +47,6 @@ void UAbilityTask_WaitInRangeForAbility::InitSimulatedTask(UGameplayTasksCompone
 
 void UAbilityTask_WaitInRangeForAbility::Activate()
 {
-	AAIController* AIController;
 	if (RangeSphere)
 	{
 		RangeSphere->OnComponentBeginOverlap.AddDynamic(this, &UAbilityTask_WaitInRangeForAbility::OverlapHandle);

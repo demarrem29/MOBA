@@ -87,7 +87,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InventoryProperties")
 	bool bUniqueOwned; 
 
-	
+	// Abilities and/or stats granted by the equipped item. Effect and effect level
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Effects")
+		TMap<TSubclassOf<class UGameplayEffect>, float> GrantedEffects;
+
 public:
 	FORCEINLINE void SetOwner(AMOBACharacter* NewOwner) { MyOwner = NewOwner; }
 	FORCEINLINE AMOBACharacter* GetOwner() { return MyOwner; }
@@ -97,6 +100,7 @@ public:
 	void SetCurrentStacks(int32 NewStackCount);
 	FORCEINLINE int32 GetCurrentStacks() { return CurrentStacks; }
 	FORCEINLINE int32 GetMaxStacks() { return MaxStacks; }
+	FORCEINLINE TMap<TSubclassOf<class UGameplayEffect>, float> GetGrantedEffects() { return GrantedEffects; }
 };
 
 UCLASS(Blueprintable, BlueprintType)
@@ -120,16 +124,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Modules")
 		TArray<UEquipment*> EquippedModules;
 
-	// Abilities and/or stats granted by the equipped item. Effect and effect level
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Granted Effects")
-		TMap<TSubclassOf<class UGameplayEffect>, float> GrantedEffects;
-
 public:
 	FORCEINLINE bool GetUniqueEquipped() { return bUniqueEquipped; }
 	FORCEINLINE bool GetModuleUniqueEquipped() { return bModuleUniqueEquipped; }
 	FORCEINLINE int32 GetMaxSlots() { return MaxModuleSlots; }
 	FORCEINLINE TArray<UEquipment*> GetEquippedModules() { return EquippedModules; }
-	FORCEINLINE TMap<TSubclassOf<class UGameplayEffect>, float> GetGrantedEffects() { return GrantedEffects; }
 };
 
 // Weapon-specific characteristics like damage, attack speed, etc.
