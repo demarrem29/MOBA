@@ -6,15 +6,18 @@
 #include "MOBAAttributeSet.h"
 #include "AbilitySystemComponent.h"
 
-void UItem::SetCurrentStacks(int32 NewStackCount) 
+void UItem::SetCurrentStacks(int32 NewStackCount)
 {
-	CurrentStacks = NewStackCount;
-	FMath::Clamp(CurrentStacks, 0, MaxStacks); // Enforce valid stack count
-	if (CurrentStacks == 0) 
-	{ 
+	// Destroy item if new stack count is 0
+	if (NewStackCount == 0)
+	{
 		MyOwner->EquipmentComponent->RemoveItemFromInventory(this, true);
+		return;
 	}
 
+	// Stack count was not zero, use new value
+	CurrentStacks = NewStackCount;
+	FMath::Clamp(CurrentStacks, 1, MaxStacks); // Enforce valid stack count
 }
 
 // Sets default values for this component's properties
@@ -46,26 +49,28 @@ void UEquipmentComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 }
 
 // Function to add an item to inventory. ExistingItem is an optional parameter. WARNING: ReturnedItem may be NULL.
-void UEquipmentComponent::AddItemToInventory(TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* ExistingItem, const int32 Quantity)
+void UEquipmentComponent::AddItemToInventory(const TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* const ExistingItem, const int32 Quantity)
 {
-	bool Instanced; 
-	bool AnotherExists;
-	bool Unique;
-	bool CanStack;
+	bool Instanced = false;
+	bool AnotherExists = false;
+	bool Unique = false;
+	bool CanStack = false;
 	int32 AvailableInventorySlots;
 	UItem* Item;
 	int32 QuantityRemaining = Quantity;
 	int32 InventorySlotsRequired;
 
+	UObject* ItemBPObj = ItemClass->ClassDefaultObject;
+	Item = Cast<UItem>(ItemBPObj);
 	// Verify item class is valid, abort if not
-	if (!(Cast<UItem>(ItemClass))) 
+	if (!Item) 
 	{
 		Message = EInventoryMessage::DoesNotExist;
 		return;
 	}
 	
 	AnotherExists = ClassAlreadyPresentInInventory(ItemClass); // Whether another item of the same class is present in inventory
-	Unique = CastChecked<UItem>(ItemClass)->GetUniqueOwned();			// Multiple of the same item class allowed in inventory?
+	Unique = Item->GetUniqueOwned();			// Multiple of the same item class allowed in inventory?
 
 	// Abort if the item is unique and another is in inventory
 	if (AnotherExists && Unique)
@@ -74,13 +79,13 @@ void UEquipmentComponent::AddItemToInventory(TSubclassOf<class UItem> ItemClass,
 		return;
 	}
 
-	InventorySlotsRequired = (Quantity + CastChecked<UItem>(ItemClass)->GetMaxStacks() - 1) / CastChecked<UItem>(ItemClass)->GetMaxStacks(); // How many inventory slots are required
+	InventorySlotsRequired = (Quantity + Item->GetMaxStacks() - 1) / Item->GetMaxStacks(); // How many inventory slots are required
 	AvailableInventorySlots = MaxInventorySize - Inventory.Num();
 
 	int32 SlotsUsed;
 	
 	// Should we try to add stacks to an existing inventory slot before filling a new inventory slot?
-	CanStack = (CastChecked<UItem>(ItemClass)->GetMaxStacks() > 1) ? true : false;
+	CanStack = (Item->GetMaxStacks() > 1) ? true : false;
 
 	// If we can stack, check and see if any of the existing items have room for more stacks
 	TArray<UItem*> FilterArray = ItemInstancesAlreadyPresentInInventory(ItemClass);
@@ -156,7 +161,7 @@ void UEquipmentComponent::AddItemToInventory(TSubclassOf<class UItem> ItemClass,
 			{
 				Item = NewObject<UItem>(this, ItemClass);
 			}
-			else
+			else 
 			{
 				Item = ExistingItem;
 			}
@@ -169,7 +174,9 @@ void UEquipmentComponent::AddItemToInventory(TSubclassOf<class UItem> ItemClass,
 		int32 StacksUsed = (QuantityRemaining >= AvailableStacks) ? AvailableStacks : QuantityRemaining;
 		QuantityRemaining -= StacksUsed;
 		Item->SetCurrentStacks(StacksUsed);
+		Item->SetOwner(CastChecked<AMOBACharacter>(this->GetOwner()));
 		Inventory.Add(Item);
+		ReturnedItems.Add(Item);
 		if (QuantityRemaining <= 0) break;
 	}
 	Message = EInventoryMessage::Success;
@@ -362,6 +369,12 @@ EInventoryMessage UEquipmentComponent::UnEquip(ESlotType SlotToUnequip)
 	if (Inventory.Num() >= MaxInventorySize) return EInventoryMessage::InventoryFull;
 	// Checks passed, remove from equipment slots and add to inventory
 	EquipmentSlots.Remove(SlotToUnequip);
+	//Remove Effects granted by the item
+	for (auto Effect : Cast<UEquipment>(ItemToUnequip)->GetGrantedEffects())
+	{
+		FGameplayEffectContextHandle Context = ItemToUnequip->GetOwner()->AbilitySystemComponent->MakeEffectContext();
+		ItemToUnequip->GetOwner()->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(Effect.Key, ItemToUnequip->GetOwner()->AbilitySystemComponent);
+	}
 	Inventory.Add(ItemToUnequip);
 	return EInventoryMessage::Success;
 }

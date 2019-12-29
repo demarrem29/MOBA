@@ -92,15 +92,15 @@ protected:
 		TMap<TSubclassOf<class UGameplayEffect>, float> GrantedEffects;
 
 public:
-	FORCEINLINE void SetOwner(AMOBACharacter* NewOwner) { MyOwner = NewOwner; }
-	FORCEINLINE AMOBACharacter* GetOwner() { return MyOwner; }
-	FORCEINLINE EItemType GetItemType() { return ItemType; }
-	FORCEINLINE FName GetItemName() { return ItemName; }
-	FORCEINLINE bool GetUniqueOwned() { return bUniqueOwned; }
 	void SetCurrentStacks(int32 NewStackCount);
-	FORCEINLINE int32 GetCurrentStacks() { return CurrentStacks; }
-	FORCEINLINE int32 GetMaxStacks() { return MaxStacks; }
-	FORCEINLINE TMap<TSubclassOf<class UGameplayEffect>, float> GetGrantedEffects() { return GrantedEffects; }
+	FORCEINLINE void SetOwner(AMOBACharacter* NewOwner) { MyOwner = NewOwner; }
+	FORCEINLINE AMOBACharacter* GetOwner() const { return MyOwner; }
+	FORCEINLINE EItemType GetItemType() const { return ItemType; }
+	FORCEINLINE FName GetItemName() const { return ItemName; }
+	FORCEINLINE bool GetUniqueOwned() const { return bUniqueOwned; }
+	FORCEINLINE int32 GetCurrentStacks() const { return CurrentStacks; }
+	FORCEINLINE int32 GetMaxStacks() const { return MaxStacks; }
+	FORCEINLINE TMap<TSubclassOf<class UGameplayEffect>, float> GetGrantedEffects() const { return GrantedEffects; }
 };
 
 UCLASS(Blueprintable, BlueprintType)
@@ -186,7 +186,7 @@ public:
 	TMap<ESlotType, UEquipment*> EquipmentSlots;
 
 	UFUNCTION(BlueprintCallable)
-	void AddItemToInventory(TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* ExistingItem = NULL, const int32 Quantity = 1);
+	void AddItemToInventory(const TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* const ExistingItem = NULL, const int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable)
 	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 Quantity = 1);
