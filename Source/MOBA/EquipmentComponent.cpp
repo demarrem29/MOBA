@@ -146,6 +146,8 @@ void UEquipmentComponent::AddItemToInventory(const TSubclassOf<class UItem> Item
 				CurrentItem->SetCurrentStacks(CurrentItem->GetCurrentStacks() + StacksUsed);
 				// End if there are no more stacks to add
 				if (QuantityRemaining <= 0) break;
+				// Add this item to the list of affected items if we haven't already
+				ReturnedItems.AddUnique(CurrentItem);
 			}
 		}
 	}
@@ -175,35 +177,57 @@ void UEquipmentComponent::AddItemToInventory(const TSubclassOf<class UItem> Item
 		QuantityRemaining -= StacksUsed;
 		Item->SetCurrentStacks(StacksUsed);
 		Item->SetOwner(CastChecked<AMOBACharacter>(this->GetOwner()));
+		// Add item to inventory and call delegate to update UI
 		Inventory.Add(Item);
+		// Add this item as a returned item reference
 		ReturnedItems.Add(Item);
 		if (QuantityRemaining <= 0) break;
 	}
 	Message = EInventoryMessage::Success;
+	
+	// Operation successfully added some items, populate a TMap to broadcast
+	TMap<UItem*, int32> AffectedItems;
+	for (auto & MapElement : ReturnedItems) 
+	{
+		AffectedItems.Add(MapElement, ReturnedItems.Find(MapElement));
+	}
+	OnInventoryChange.Broadcast(AffectedItems);
 	return;	
 }
 
 // Function to remove an item from inventory. 
-EInventoryMessage UEquipmentComponent::RemoveItemFromInventory(UItem* ItemToRemove, bool Delete, int32 Quantity)
+EInventoryMessage UEquipmentComponent::RemoveItemFromInventory(UItem* ItemToRemove, bool Delete, int32 NumberOfStacksToRemove)
 {
-	if (Inventory.Contains(ItemToRemove)) 
+	// Verify that the item is actually in the inventory
+	if (Inventory.Contains(ItemToRemove))
 	{
-		Inventory.Remove(ItemToRemove);
-		if (Delete) 
-		{
-			ItemToRemove->BeginDestroy();
+		// Create return value for delegate and add the item as an affected inventory slot
+		TMap<UItem*, int32> AffectedItems;
+		AffectedItems.Add(ItemToRemove, Inventory.Find(ItemToRemove));
+
+		// Check if we are just removing some stacks or actually removing the entire item
+		if (NumberOfStacksToRemove >= ItemToRemove->GetCurrentStacks()) 
+		{	
+			Inventory.Remove(ItemToRemove);
+			if (ItemToRemove->GetItemType() == EItemType::Consumable || Delete) 
+			{
+				ItemToRemove->BeginDestroy();
+			}
 		}
 		else 
 		{
-			RemovedInventory.Add(ItemToRemove);
+			ItemToRemove->SetCurrentStacks(ItemToRemove->GetCurrentStacks() - NumberOfStacksToRemove);
 		}
+				
+		// Broadcast Delegate and return
+		OnInventoryChange.Broadcast(AffectedItems);
 		return EInventoryMessage::Success;
 	}
+	// Item did not exist, do nothing and return
 	else return EInventoryMessage::DoesNotExist;
 }
 
-
-
+// This function determines if we should add new stacks to an existing item, or create a new one.
 bool UEquipmentComponent::ClassAlreadyPresentInInventory(TSubclassOf<UItem> ItemClass)
 {
 	if (Inventory.ContainsByPredicate([&](const UObject* Object) {return Object->GetClass() == ItemClass; }))
@@ -214,12 +238,14 @@ bool UEquipmentComponent::ClassAlreadyPresentInInventory(TSubclassOf<UItem> Item
 	return false;
 }
 
+// Find all items in inventory of the given class
 TArray<UItem*> UEquipmentComponent::ItemInstancesAlreadyPresentInInventory(TSubclassOf<UItem> ItemClass) 
 {
 	auto Filter = Inventory.FilterByPredicate([&](const UObject* Object) {return Object->GetClass() == ItemClass; });
 	return Filter;
 }
 
+// Are we adding stacks to a specific item?
 bool UEquipmentComponent::ItemInstanceAlreadyPresentInInventory(UItem* Item) 
 {
 	
@@ -230,7 +256,6 @@ bool UEquipmentComponent::ItemInstanceAlreadyPresentInInventory(UItem* Item)
 	}
 	return false;
 }
-
 
 // Function to equip a new item on the character.
 EInventoryMessage UEquipmentComponent::Equip(ESlotType SlotToEquip, UEquipment* ItemToEquip)
@@ -283,6 +308,7 @@ EInventoryMessage UEquipmentComponent::Equip(ESlotType SlotToEquip, UEquipment* 
 					if ((FoundEquipment->GetMaxSlots() > ExistingModules.Num()) && (ExistingModules.Num()  >= 0))
 					{
 						ExistingModules.Add(ItemToEquip);
+						OnEquipmentChange.Broadcast(SlotToEquip, ItemToEquip);
 						if (ItemInstanceAlreadyPresentInInventory(ItemToEquip)) 
 						{
 							RemoveItemFromInventory(ItemToEquip);
@@ -339,6 +365,7 @@ EInventoryMessage UEquipmentComponent::Equip(ESlotType SlotToEquip, UEquipment* 
 			if (ItemType != EItemType::ArmorModule && ItemType != EItemType::WeaponModule) 
 			{
 				EquipmentSlots.Add(SlotToEquip, ItemToEquip); // Add the item to the equipment slots TMAP
+				OnEquipmentChange.Broadcast(SlotToEquip, ItemToEquip);
 			}
 			Cast<UItem>(ItemToEquip)->SetOwner(MyOwner); // Add the item owner
 			// Apply Gameplay Effects to Owner
@@ -362,6 +389,9 @@ EInventoryMessage UEquipmentComponent::Equip(ESlotType SlotToEquip, UEquipment* 
 
 EInventoryMessage UEquipmentComponent::UnEquip(ESlotType SlotToUnequip)
 {
+	// Return storage containers for inventory operations
+	TArray<UItem*> ReturnedItems;
+	EInventoryMessage ReturnedMessage;
 	UEquipment* ItemToUnequip = *EquipmentSlots.Find(SlotToUnequip);
 	// Check if there is a valid item in the slot
 	if (!ItemToUnequip) return EInventoryMessage::DoesNotExist;
@@ -369,13 +399,14 @@ EInventoryMessage UEquipmentComponent::UnEquip(ESlotType SlotToUnequip)
 	if (Inventory.Num() >= MaxInventorySize) return EInventoryMessage::InventoryFull;
 	// Checks passed, remove from equipment slots and add to inventory
 	EquipmentSlots.Remove(SlotToUnequip);
+	OnEquipmentChange.Broadcast(SlotToUnequip, ItemToUnequip);
 	//Remove Effects granted by the item
 	for (auto Effect : Cast<UEquipment>(ItemToUnequip)->GetGrantedEffects())
 	{
 		FGameplayEffectContextHandle Context = ItemToUnequip->GetOwner()->AbilitySystemComponent->MakeEffectContext();
 		ItemToUnequip->GetOwner()->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(Effect.Key, ItemToUnequip->GetOwner()->AbilitySystemComponent);
 	}
-	Inventory.Add(ItemToUnequip);
+	AddItemToInventory(ItemToUnequip->StaticClass(), ReturnedItems, ReturnedMessage, ItemToUnequip);
 	return EInventoryMessage::Success;
 }
 

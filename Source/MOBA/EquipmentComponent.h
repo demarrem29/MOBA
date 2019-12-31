@@ -11,13 +11,13 @@
 #include "Projectile.h"
 #include "EquipmentComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChange);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEquipmentChange);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryChange, TArray<UItem*>, AffectedSlotsAndItems);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEquipmentChange, uint8, AffectedSlot, UEquipment*, EquipmentObjRef); // Affected slot will be converted to ESlotType later
 
 class AMOBACharacter;
-// Enum defining types of items
+
 UENUM(BlueprintType)
-enum class EItemType : uint8 
+enum class EItemType : uint8
 {
 	Consumable UMETA(DisplayName = "Consumable"),
 	Armor UMETA(DisplayName = "Armor"),
@@ -189,7 +189,7 @@ public:
 	void AddItemToInventory(const TSubclassOf<class UItem> ItemClass, TArray<UItem*> &ReturnedItems, EInventoryMessage &Message, UItem* const ExistingItem = NULL, const int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable)
-	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 Quantity = 1);
+	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 NumberOfStacksToRemove = 1);
 
 	UFUNCTION(BlueprintCallable)
 	EInventoryMessage Equip(ESlotType SlotToEquip, UEquipment* ItemToEquip);
@@ -213,6 +213,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;	
+	
+	// Delegates for updating data and UI
 	FOnInventoryChange OnInventoryChange;
 	FOnEquipmentChange OnEquipmentChange;
 };

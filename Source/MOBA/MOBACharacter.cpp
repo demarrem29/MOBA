@@ -203,13 +203,13 @@ void AMOBACharacter::PossessedBy(AController* NewController)
 
 }
 
-void AMOBACharacter::InventoryChange() 
+void AMOBACharacter::InventoryChange(TMap<UItem*, int32> AffectedSlots)
 {
-	BP_InventoryChange();
+	BP_InventoryChange(AffectedSlots);
 }
-void AMOBACharacter::EquipmentChange()
+void AMOBACharacter::EquipmentChange(ESlotType AffectedSlot, UEquipment* EquipmentObjRef)
 {
-	BP_EquipmentChange();
+	BP_EquipmentChange(AffectedSlot, EquipmentObjRef);
 }
 void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth) 
 {
