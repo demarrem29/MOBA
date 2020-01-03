@@ -200,16 +200,15 @@ void AMOBACharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	AbilitySystemComponent->RefreshAbilityActorInfo();
-
 }
 
-void AMOBACharacter::InventoryChange(TMap<UItem*, int32> AffectedSlots)
+void AMOBACharacter::InventoryChange(TArray<UItem*> AffectedSlots, TArray<int32> AffectedIndices)
 {
-	BP_InventoryChange(AffectedSlots);
+	BP_InventoryChange(AffectedSlots, AffectedIndices);
 }
-void AMOBACharacter::EquipmentChange(ESlotType AffectedSlot, UEquipment* EquipmentObjRef)
+void AMOBACharacter::EquipmentChange(uint8 AffectedSlot, UEquipment* EquipmentObjRef)
 {
-	BP_EquipmentChange(AffectedSlot, EquipmentObjRef);
+	BP_EquipmentChange(ESlotType(AffectedSlot), EquipmentObjRef);
 }
 void AMOBACharacter::HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth) 
 {

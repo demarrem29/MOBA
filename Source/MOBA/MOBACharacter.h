@@ -125,9 +125,9 @@ public:
 
 	// Event Handlers for receiving attribute set delegate broadcasts
 	UFUNCTION()
-		void InventoryChange(TMap<UItem*, int32> AffectedSlots);
+		void InventoryChange(TArray<UItem*> AffectedSlots, TArray<int32> AffectedIndices);
 	UFUNCTION()
-		void EquipmentChange(ESlotType AffectedSlot, UEquipment* EquipmentObjRef);
+		void EquipmentChange(uint8 AffectedSlot, UEquipment* EquipmentObjRef);
 	UFUNCTION()
 		void HealthChange(FGameplayAttributeData health, FGameplayAttributeData maxhealth);
 	UFUNCTION()
@@ -179,7 +179,7 @@ public:
 
 	// Called by the above event handlers to expose to blueprints. Useful for updating UI.
 	UFUNCTION(BlueprintImplementableEvent)
-		void BP_InventoryChange(TMap<UItem*, int32> AffectedSlots);
+		void BP_InventoryChange(const TArray<UItem*>& AffectedSlots, const TArray<int32>& AffectedIndices);
 	UFUNCTION(BlueprintImplementableEvent)
 		void BP_EquipmentChange(ESlotType AffectedSlot, UEquipment* EquipmentObjRef);
 	UFUNCTION(BlueprintImplementableEvent)

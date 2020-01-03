@@ -11,7 +11,7 @@
 #include "Projectile.h"
 #include "EquipmentComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryChange, TArray<UItem*>, AffectedSlotsAndItems);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventoryChange, TArray<UItem*>, AffectedItems, TArray<int32>, AffectedInventoryIndices);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEquipmentChange, uint8, AffectedSlot, UEquipment*, EquipmentObjRef); // Affected slot will be converted to ESlotType later
 
 class AMOBACharacter;
@@ -25,6 +25,7 @@ enum class EItemType : uint8
 	BodyImplant UMETA(DisplayName = "BodyImplant"),
 	OneHand UMETA(DisplayName = "OneHandWeapon"),
 	TwoHand UMETA(DisplayName = "TwoHandWeapon"),
+	MainHand UMETA(DisplayName = "MainHandOnly"),
 	Source UMETA(DisplayName = "Source"),
 	ArmorModule UMETA(DisplayName = "ArmorModule"),
 	WeaponModule UMETA(DisplayName = "WeaponModule")
@@ -34,11 +35,13 @@ enum class EItemType : uint8
 UENUM(BlueprintType)
 enum class ESlotType : uint8
 {
+	None UMETA(DisplayName = "None"),
 	Armor UMETA(DisplayName = "ArmorSlot"),
 	BrainImplant UMETA(DisplayName = "BrainImplantSlot"),
 	BodyImplant UMETA(DisplayName = "BodyImplantSlot"),
 	MainHand UMETA(DisplayName = "MainHandSlot"),
 	OffHand UMETA(DisplayName = "OffHandSlot"),
+	EitherHand UMETA(DisplayName = "EitherHand"), // Items that can be equipped in either hand
 };
 
 // Enum defining messages from equipping items
@@ -129,6 +132,7 @@ public:
 	FORCEINLINE bool GetModuleUniqueEquipped() { return bModuleUniqueEquipped; }
 	FORCEINLINE int32 GetMaxSlots() { return MaxModuleSlots; }
 	FORCEINLINE TArray<UEquipment*> GetEquippedModules() { return EquippedModules; }
+	ESlotType GetEquipmentSlotType();
 };
 
 // Weapon-specific characteristics like damage, attack speed, etc.
@@ -170,6 +174,13 @@ class MOBA_API UEquipmentComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	// Delegates for updating data and UI
+	FOnInventoryChange OnInventoryChange;
+	FOnEquipmentChange OnEquipmentChange;
+	
 	// Sets default values for this component's properties
 	UEquipmentComponent();
 
@@ -192,10 +203,19 @@ public:
 	EInventoryMessage RemoveItemFromInventory(UItem* ItemToRemove, bool Delete = false, int32 NumberOfStacksToRemove = 1);
 
 	UFUNCTION(BlueprintCallable)
+		EInventoryMessage SwapItemsInInventory(int32 Index1, int32 Index2);
+
+	UFUNCTION(BlueprintCallable)
+		int32 GetEmptyInventorySlots(TArray<int32>& OptionalIndexArray);
+	
+	UFUNCTION(BlueprintCallable)
 	EInventoryMessage Equip(ESlotType SlotToEquip, UEquipment* ItemToEquip);
 	
 	UFUNCTION(BlueprintCallable)
 	EInventoryMessage UnEquip(ESlotType SlotToUnequip);
+
+	UFUNCTION(BlueprintCallable)
+	EInventoryMessage SwapEquipment(UEquipment* Equipment1, UEquipment* Equipment2);
 
 // Helper Inventory functions, not to be called directly
 private:
@@ -206,15 +226,15 @@ private:
 	UFUNCTION()
 		bool ItemInstanceAlreadyPresentInInventory(UItem* Item);
 
+	// Internal helper function to handle TMap operation and gameplay effects application. DOES NOT HANDLE INVENTORY OPERATION.
+	UFUNCTION()
+		bool AddEquipmentToCharacter(UEquipment* ItemToAdd);
+
+	// Internal helper function to handle TMap operation and gameplay effects removal. DOES NOT HANDLE INVENTORY OPERATION.
+	UFUNCTION()
+		bool RemoveEquipmentFromCharacter(UEquipment* ItemToRemove);
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;	
-	
-	// Delegates for updating data and UI
-	FOnInventoryChange OnInventoryChange;
-	FOnEquipmentChange OnEquipmentChange;
 };
