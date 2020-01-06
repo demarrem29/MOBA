@@ -242,7 +242,7 @@ EInventoryMessage UEquipmentComponent::RemoveItemFromInventory(UItem* ItemToRemo
 		// Create return value for delegate and add the item as an affected inventory slot
 		TArray<UItem*> AffectedItems;
 		TArray<int32> AffectedIndices;
-		AffectedItems.Add(ItemToRemove);
+		
 		AffectedIndices.Add(Inventory.Find(ItemToRemove));
 
 		// Check if we are just removing some stacks or actually removing the entire item
@@ -256,7 +256,9 @@ EInventoryMessage UEquipmentComponent::RemoveItemFromInventory(UItem* ItemToRemo
 		}
 		else 
 		{
+			// Only Removing Stacks, decrement stacks and add item to delegate. item is not added if removed/deleted
 			ItemToRemove->SetCurrentStacks(ItemToRemove->GetCurrentStacks() - NumberOfStacksToRemove);
+			AffectedItems.Add(ItemToRemove);
 		}
 				
 		// Broadcast Delegate and return
@@ -507,6 +509,7 @@ EInventoryMessage UEquipmentComponent::Equip(ESlotType SlotToEquip, UEquipment* 
 					return EInventoryMessage::DoesNotExist;
 				}
 			}
+			RemoveItemFromInventory(ItemToEquip);
 			return EInventoryMessage::Success;
 			
 		}
