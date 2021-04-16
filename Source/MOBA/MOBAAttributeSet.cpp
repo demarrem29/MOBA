@@ -317,151 +317,151 @@ void UMOBAAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 
 FGameplayAttribute UMOBAAttributeSet::HealthAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Health));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Health));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::MaxHealthAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MaxHealth));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MaxHealth));
 	return FGameplayAttribute(Property);
 }
 
 
 FGameplayAttribute UMOBAAttributeSet::HealthRegenAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealthRegen));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealthRegen));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::HealingModifierAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealingModifier));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, HealingModifier));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::ManaAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Mana));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Mana));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::ManaRegenAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, ManaRegen));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, ManaRegen));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::LevelAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Level));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Level));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::ExperienceAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Experience));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Experience));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::AttackPowerAttribute() 
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackPower));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, AttackPower));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::SpellPowerAttribute() 
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, SpellPower));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, SpellPower));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::MainHandAttackSpeedAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackSpeed));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackSpeed));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::OffHandAttackSpeedAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackSpeed));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackSpeed));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::BonusAttackSpeedAttribute() 
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, BonusAttackSpeed));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, BonusAttackSpeed));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::MainHandMinDamageAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMinDamage));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMinDamage));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::MainHandMaxDamageAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMaxDamage));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandMaxDamage));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::MainHandAttackRangeAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackRange));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MainHandAttackRange));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::OffHandMinDamageAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMinDamage));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMinDamage));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::OffHandMaxDamageAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMaxDamage));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandMaxDamage));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::OffHandAttackRangeAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackRange));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, OffHandAttackRange));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::CriticalChanceAttribute() 
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalChance));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalChance));
 	return FGameplayAttribute(Property);
 }
 FGameplayAttribute UMOBAAttributeSet::CriticalDamageAttribute() 
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalDamage));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, CriticalDamage));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::ArmorAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Armor));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, Armor));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::PhysicalDamageReductionAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, PhysicalDamageReduction));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, PhysicalDamageReduction));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::EnvironmentalResistanceAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalResistance));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalResistance));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::EnvironmentalDamageReductionAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalDamageReduction));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, EnvironmentalDamageReduction));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::FlatDamageReductionAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, FlatDamageReduction));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, FlatDamageReduction));
 	return FGameplayAttribute(Property);
 }
 
 FGameplayAttribute UMOBAAttributeSet::MovementSpeedAttribute()
 {
-	static UProperty* Property = FindFieldChecked<UProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MovementSpeed));
+	static FProperty* Property = FindFieldChecked<FProperty>(UMOBAAttributeSet::StaticClass(), GET_MEMBER_NAME_CHECKED(UMOBAAttributeSet, MovementSpeed));
 	return FGameplayAttribute(Property);
 }

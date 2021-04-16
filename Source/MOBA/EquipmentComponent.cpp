@@ -16,8 +16,8 @@ void UItem::SetCurrentStacks(int32 NewStackCount)
 	}
 
 	// Stack count was not zero, use new value
-	CurrentStacks = NewStackCount;
-	FMath::Clamp(CurrentStacks, 1, MaxStacks); // Enforce valid stack count
+	CurrentStacks = FMath::Clamp(NewStackCount, 1, MaxStacks); // Enforce valid stack count
+	return;
 }
 
 ESlotType UEquipment::GetEquipmentSlotType() 
